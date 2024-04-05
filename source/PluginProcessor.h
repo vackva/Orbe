@@ -1,9 +1,10 @@
 #pragma once
 
-#include <juce_audio_processors/juce_audio_processors.h>
+#include "JuceHeader.h"
+#include "PluginParameters.h"
 
 //==============================================================================
-class AudioPluginAudioProcessor final : public juce::AudioProcessor
+class AudioPluginAudioProcessor final : public juce::AudioProcessor, private juce::AudioProcessorValueTreeState::Listener
 {
 public:
     //==============================================================================
@@ -43,6 +44,11 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
+    void parameterChanged (const juce::String& parameterID, float newValue) override;
+
+private:
+    juce::AudioProcessorValueTreeState parameters;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };
