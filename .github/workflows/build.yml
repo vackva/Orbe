@@ -1,0 +1,105 @@
+name: Build Binaural Panner
+
+on:
+  workflow_dispatch: # lets you run a build from github.com
+  # Runs the workflow on push events but only for the develop branch
+  push:
+    branches:
+      - main
+    # This is needed otherwise the github.ref is not set with ref/tags/v...
+    tags:
+      - 'v*.*.*'
+
+# When pushing new commits, cancel any running builds on that branch
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_NAME: BinauralPanner
+  TARGET_NAME: BinauralPanner
+  RELEASE_NAME: "BinauralPanner"
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  # Use up to 4 cpus to build juceaide, etc
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+  # Name of the build directory
+  BUILD_DIR: build
+  # Needed for mozilla sccache action
+  SCCACHE_GHA_ENABLED: "true"
+
+jobs:
+
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false # show all errors for each platform (vs. cancel jobs on error)
+      matrix:
+        include:
+          -   name: Linux-x86_64
+              os: ubuntu-latest
+          -   name: macOS-x86_64
+              os: macOS-latest
+          -   name: macOS-arm64
+              os: macOS-latest
+          -   name: Windows-x86_64
+              os: windows-latest
+
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      #A simple printout of the matrix
+      -   name: printout
+          shell: bash
+          run: |
+            echo ${{ github.ref }}
+            echo "TARGET_NAME=${{ env.TARGET_NAME }}";
+            echo "RELEASE_NAME=${{ env.RELEASE_NAME }}";
+            echo "matrix.name=${{ matrix.name }}";
+            echo "matrix.os=${{ matrix.os }}";
+
+      # We need the osxutils to get the codesign and notorization tools
+      # We need to install ccache here for Windows to grab the right version
+      -   name: install deps
+          shell: bash
+          run: |
+            if [ "${{ matrix.os }}" == "macOS-latest" ]; then
+                brew install osxutils ninja
+            elif [ "${{ matrix.name }}" == "Windows-x86_64" ]; then
+                choco install ninja
+            elif [ "${{ matrix.name }}" == "Linux-x86_64" ]; then
+                sudo apt-get update && sudo apt install libasound2-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev ninja-build
+            else
+                echo "Unknown OS";
+            fi;
+
+      # With this we checkout to our repo
+      -   name: get repo and submodules
+          uses: actions/checkout@v4
+        # Here we get the submodules like juce
+          with:
+            submodules: true
+
+      # We cache the build to speed up the build process
+      -   name: cache the build
+          uses: mozilla-actions/sccache-action@v0.0.3
+
+      # Typical cmake configuration with default generator
+      # With DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" we can build universal binaries for apple computers, but for this we would also need universal libs
+      -   name: cmake configure
+          shell: bash
+          run: |
+            if [ "${{ matrix.name }}" == "Linux-x86_64" ]; then
+                cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            elif [ "${{ matrix.name }}" == "macOS-x86_64" ]; then
+                cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_OSX_ARCHITECTURES="x86_64"
+            elif [ "${{ matrix.name }}" == "macOS-arm64" ]; then
+                cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_OSX_ARCHITECTURES="arm64"
+            else
+                cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            fi;
+
+      # Build the project
+      -   name: cmake build
+          shell: bash
+          run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel ${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}
