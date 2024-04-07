@@ -31,6 +31,9 @@ target_sources(${TARGET_NAME}
         source/PluginEditor.cpp
         source/PluginProcessor.cpp
         source/PluginParameters.cpp
+
+        source/ui/PannerVisualisation.cpp
+        source/ui/BackgroundComponent.cpp
 )
 
 target_compile_definitions(${TARGET_NAME}

@@ -140,6 +140,11 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    for (int i = 0; i < buffer.getNumChannels(); ++i) {
+        for (int j = 0; j <  buffer.getNumSamples(); ++j) {
+            buffer.setSample(i, j, 0.0f);
+        }
+    }
 }
 
 //==============================================================================
@@ -150,8 +155,8 @@ bool AudioPluginAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 {
-//    return new AudioPluginAudioProcessorEditor (*this);
-    return new juce::GenericAudioProcessorEditor (*this);
+    return new AudioPluginAudioProcessorEditor (*this);
+//    return new juce::GenericAudioProcessorEditor (*this);
 }
 
 //==============================================================================
