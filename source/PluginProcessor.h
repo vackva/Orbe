@@ -1,6 +1,6 @@
 #pragma once
 
-#include "JuceHeader.h"
+#include <JuceHeader.h>
 #include "PluginParameters.h"
 
 //==============================================================================
@@ -43,11 +43,17 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    float getAtomicParameterValue(const juce::String& parameterID);
+    juce::AudioProcessorValueTreeState& getValueTreeState();
+
 private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
 private:
     juce::AudioProcessorValueTreeState parameters;
+
+    std::atomic<float> paramAzimuth { 0.0f };
+    std::atomic<float> paramElevation { 0.0f };
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

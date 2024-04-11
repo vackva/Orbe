@@ -1,11 +1,12 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "PluginParameters.h"
 #include "ui/BackgroundComponent.h"
 #include "ui/PannerVisualisation.h"
 
 //==============================================================================
-class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
+class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor, juce::Timer, PannerVisualisation::Listener
 {
 public:
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
@@ -16,18 +17,9 @@ public:
     void resized() override;
 
 private:
-    void setEditorDimensions() {
-        double ratio = 1.0/1.75;
-
-        setResizeLimits(350,
-                        static_cast<int>(350.0 / ratio),
-                        800,
-                        static_cast<int>(800.0 / ratio));
-
-        getConstrainer()->setFixedAspectRatio(ratio);
-
-        setSize(400,static_cast<int>(400.0 / ratio));
-    }
+    void setEditorDimensions();
+    void timerCallback() override;
+    void pannerChanged(float azimuth, float elevation) override;
 
 private:
     AudioPluginAudioProcessor& processorRef;

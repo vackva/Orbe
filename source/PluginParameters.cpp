@@ -11,7 +11,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
     params.push_back(std::make_unique<juce::AudioParameterFloat>(ELEV_ID,
                                                                  ELEV_NAME,
                                                                  elevRange,
-                                                                 0.f));
+                                                                 90.f));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(DIST_ID,
                                                                  DIST_NAME,

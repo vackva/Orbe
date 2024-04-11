@@ -176,7 +176,28 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
 }
 
 void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, float newValue) {
-    std::cout << parameterID << ": " << newValue << std::endl;
+    if (parameterID == PluginParameters::AZIM_ID.getParamID()) {
+        paramAzimuth.store(newValue);
+    }
+    else if (parameterID == PluginParameters::ELEV_ID.getParamID()) {
+        paramElevation.store(newValue);
+    }
+}
+
+float AudioPluginAudioProcessor::getAtomicParameterValue(const String &parameterID) {
+    if (parameterID == PluginParameters::AZIM_ID.getParamID()) {
+        return paramAzimuth.load();
+    }
+    else if (parameterID == PluginParameters::ELEV_ID.getParamID()) {
+        return paramElevation.load();
+    }
+    else {
+        return 0.0f;
+    }
+}
+
+juce::AudioProcessorValueTreeState &AudioPluginAudioProcessor::getValueTreeState() {
+    return parameters;
 }
 
 //==============================================================================

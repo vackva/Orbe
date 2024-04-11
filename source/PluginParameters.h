@@ -25,7 +25,7 @@ public:
 private:
     inline static juce::StringArray parameterList;
     inline static juce::NormalisableRange<float> azimRange {-180.0f, 180.0f, 1.0f},
-                                                 elevRange {-90.0f, 90.0f, 1.0f},
+                                                 elevRange {0.f, 90.0f, 1.0f},
                                                  distRange {1.0f, 100.0f, 0.1f},
                                                  dryWetRange {0.0f, 1.0f, 0.01f};
 
