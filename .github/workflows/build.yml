@@ -40,8 +40,8 @@ jobs:
               os: ubuntu-latest
           -   name: macOS-x86_64
               os: macOS-latest
-          -   name: macOS-arm64
-              os: macOS-latest
+#          -   name: macOS-arm64
+#              os: macOS-latest
           -   name: Windows-x86_64
               os: windows-latest
 

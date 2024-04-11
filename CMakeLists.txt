@@ -4,11 +4,7 @@ project(BinauralPanner VERSION 0.0.1)
 set (TARGET_NAME ${PROJECT_NAME})
 
 if(APPLE)
-    if(CMAKE_OSX_ARCHITECTURES STREQUAL "arm64")
-        set(FORMATS_TO_BUILD AU VST3 Standalone)
-    else()
-        set(FORMATS_TO_BUILD AU Standalone)
-    endif()
+    set(FORMATS_TO_BUILD AU VST3 Standalone)
 else() # Maybe add LV2 here for Linux
     set(FORMATS_TO_BUILD VST3 Standalone)
 endif()
