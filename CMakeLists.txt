@@ -3,6 +3,16 @@ cmake_minimum_required(VERSION 3.22)
 project(BinauralPanner VERSION 0.0.1)
 set (TARGET_NAME ${PROJECT_NAME})
 
+if(APPLE)
+    if(CMAKE_OSX_ARCHITECTURES STREQUAL "arm64")
+        set(FORMATS_TO_BUILD AU VST3 Standalone)
+    else()
+        set(FORMATS_TO_BUILD AU Standalone)
+    endif()
+else() # Maybe add LV2 here for Linux
+    set(FORMATS_TO_BUILD VST3 Standalone)
+endif()
+
 # find_package(JUCE CONFIG REQUIRED)
 add_subdirectory(modules/JUCE)
 
@@ -20,7 +30,7 @@ juce_add_plugin(${TARGET_NAME}
     PLUGIN_MANUFACTURER_CODE Juce               # A four-character manufacturer id with at least one upper-case character
     PLUGIN_CODE Dem0                            # A unique four-character plugin id with exactly one upper-case character
                                                 # GarageBand 10.3 requires the first letter to be upper-case, and the remaining letters to be lower-case
-    FORMATS AU VST3 Standalone                  # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
+    FORMATS ${FORMATS_TO_BUILD}                 # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
     PRODUCT_NAME "Binaural Panner"              # The name of the final executable, which can differ from the target name
 )
 
