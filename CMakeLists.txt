@@ -24,6 +24,12 @@ juce_add_plugin(${TARGET_NAME}
     PRODUCT_NAME "Binaural Panner"              # The name of the final executable, which can differ from the target name
 )
 
+if(APPLE AND CMAKE_OSX_ARCHITECTURES STREQUAL "arm64")
+    set_target_properties(${TARGET_NAME} PROPERTIES
+            VST3_AUTO_MANIFEST FALSE
+    )
+endif()
+
 juce_generate_juce_header(${TARGET_NAME})
 
 target_sources(${TARGET_NAME}
