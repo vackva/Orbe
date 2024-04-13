@@ -12,6 +12,28 @@ endif()
 # find_package(JUCE CONFIG REQUIRED)
 add_subdirectory(modules/JUCE)
 
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries." FORCE)
+set(SAF_BUILD_TESTS OFF CACHE BOOL "Build SAF unit tests." FORCE)
+set(SAF_BUILD_EXAMPLES OFF CACHE BOOL "Build SAF examples." FORCE)
+set(SAF_BUILD_EXTRAS OFF CACHE BOOL "Build SAF extras." FORCE)
+set(SAF_ENABLE_SOFA_READER_MODULE ON CACHE BOOL "Enable the SAF SOFA READER module" FORCE)
+
+if (MSVC)
+    include(cmake/openBLAS.cmake)
+    set(SAF_PERFORMANCE_LIB "SAF_USE_OPEN_BLAS_AND_LAPACKE")
+    set(OPENBLAS_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/lib/libopenblas.lib")
+    set(LAPACKE_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/lib/libopenblas.lib")
+    set(OPENBLAS_HEADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/include")
+elseif (APPLE)
+    set(SAF_PERFORMANCE_LIB "SAF_USE_APPLE_ACCELERATE")
+else ()
+    # LINUX
+    # sudo apt-get update && sudo apt-get install libhdf5-dev libnetcdf-dev libnetcdff-dev liblapack3 liblapack-dev libopenblas-base libopenblas-dev liblapacke-dev
+    set(SAF_PERFORMANCE_LIB "SAF_USE_OPEN_BLAS_AND_LAPACKE")
+endif ()
+
+add_subdirectory(modules/SAF)
+
 juce_add_plugin(${TARGET_NAME}
     # VERSION ...                               # Set this if the plugin version is different to the project version
     # ICON_BIG ...                              # ICON_* arguments specify a path to an image file to use as an icon for the Standalone
@@ -48,19 +70,42 @@ target_sources(${TARGET_NAME}
         source/ui/BackgroundComponent.cpp
 )
 
+set(SOFA_TEST_FILE "${CMAKE_CURRENT_LIST_DIR}/assets/pp1_HRIRs_measured.sofa")
+
 target_compile_definitions(${TARGET_NAME}
     PUBLIC
         JUCE_WEB_BROWSER=0  # If you remove this, add `NEEDS_WEB_BROWSER TRUE` to the `juce_add_plugin` call
         JUCE_USE_CURL=0     # If you remove this, add `NEEDS_CURL TRUE` to the `juce_add_plugin` call
-        JUCE_VST3_CAN_REPLACE_VST2=0)
+        JUCE_VST3_CAN_REPLACE_VST2=0
+        SOFA_TEST_FILE_PATH="${SOFA_TEST_FILE}"
+)
 
-# juce_add_binary_data(AudioPluginData SOURCES ...)
+juce_add_binary_data(AudioPluginData SOURCES
+    assets/pp1_HRIRs_measured.sofa
+)
 
 target_link_libraries(${TARGET_NAME}
     PRIVATE
-        # AudioPluginData           # If we'd created a binary data target, we'd link to it here
+        AudioPluginData
+        saf
         juce::juce_audio_utils
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
+
+
+if (MSVC)
+    set(copy_shard_libs
+            "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/bin/libopenblas.dll"
+    )
+
+    foreach(FORMAT IN LISTS FORMATS_TO_BUILD)
+        string(CONCAT CONCATENATED_TARGET ${TARGET_NAME}_${FORMAT})
+        add_custom_command(TARGET ${CONCATENATED_TARGET}
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${copy_shard_libs}
+                $<TARGET_FILE_DIR:${TARGET_NAME}>/${FORMAT})
+    endforeach()
+endif (MSVC)

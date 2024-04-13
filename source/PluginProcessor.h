@@ -3,6 +3,8 @@
 #include <JuceHeader.h>
 #include "PluginParameters.h"
 
+#include "dsp/SofaReader.h"
+
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor, private juce::AudioProcessorValueTreeState::Listener
 {
@@ -51,6 +53,8 @@ private:
 
 private:
     juce::AudioProcessorValueTreeState parameters;
+
+    SofaReader sofaReader;
 
     std::atomic<float> paramAzimuth { 0.0f };
     std::atomic<float> paramElevation { 0.0f };

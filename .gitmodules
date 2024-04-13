@@ -1,3 +1,6 @@
 [submodule "modules/JUCE"]
 	path = modules/JUCE
 	url = https://github.com/juce-framework/JUCE
+[submodule "modules/SAF"]
+	path = modules/SAF
+	url = https://github.com/leomccormack/Spatial_Audio_Framework
