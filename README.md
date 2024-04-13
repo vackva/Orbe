@@ -32,4 +32,3 @@ The primary license for the code of this project is the MIT license, but be awar
  - The *Spatial_Audio_Framework* library is licensed under the [ISC License](https://github.com/leomccormack/Spatial_Audio_Framework/blob/master/LICENSE.md)
  - The *OpenBlas* library (Windows & Linux only) is licensed under the [BSD3](https://github.com/OpenMathLib/OpenBLAS/blob/develop/LICENSE)
  - The HRTF used in this project belong to the *HUTUBS* dataset and is licensed under the [CC BY 4.0 Deed](https://depositonce.tu-berlin.de/items/dc2a3076-a291-417e-97f0-7697e332c960)
- - All other code within this project is licensed under the MIT License.
