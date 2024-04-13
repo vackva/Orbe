@@ -1,5 +1,11 @@
 ## Build instruction
 
+Dependencies on Linux (macOS and Windows do not need this!)
+```bash
+# on Linux install
+sudo apt-get update && sudo apt-get install libhdf5-dev libnetcdf-dev libnetcdff-dev liblapack3 liblapack-dev libopenblas-base libopenblas-dev liblapacke-dev
+```
+
 Build with CMake
 ```bash
 # clone the repository
