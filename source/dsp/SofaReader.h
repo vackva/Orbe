@@ -34,30 +34,6 @@ public:
                 std::cout << "NetCDF is not thread safe!" << std::endl;
                 return;
         }
-
-        //
-        int azimuthStep = 30;
-        int elevationStep = 30;
-        int minElevation = -30;
-        int numElevationSteps = 5;
-
-        int azimuth1 = 90, elevation1 = 45;
-
-        // Calculate source indices
-        int indexTest = calculateSourceIndex(azimuth1, elevation1, azimuthStep, elevationStep, minElevation, numElevationSteps);
-
-        // Print results
-        printf("Source index for azimuth %d, elevation %d: %d\n", azimuth1, elevation1, indexTest);
-
-        int leftEarIndex = 0;
-        int rightEarIndex = 1;
-
-        auto hrtfLeft = accessHRTF(&sofa, indexTest, leftEarIndex);
-        auto hrtfRight = accessHRTF(&sofa, indexTest, rightEarIndex);
-
-        std::cout << "Successfully loaded HRTF" << std::endl;
-
-        writeHRTFToWav(hrtfLeft, hrtfRight, "HRTF_Output.wav");
     }
 
     // Function to calculate the source index for a given azimuth and elevation
@@ -72,14 +48,41 @@ public:
     }
 
     // not real-time safe!!
-    std::vector<float> accessHRTF(saf_sofa_container *sofaToUse, int sourceIndex, int receiverIndex) {
+    std::vector<float> accessHRIR(saf_sofa_container *sofaToUse, int sourceIndex, int receiverIndex) {
         int index = getSourceReceiverIndex(sourceIndex, receiverIndex, sofaToUse);
-        std::vector<float> hrtf(sofaToUse->DataLengthIR);
-        memcpy(hrtf.data(), &sofaToUse->DataIR[index], sizeof(float) * sofaToUse->DataLengthIR);
-        return hrtf;
+        std::vector<float> hrir(sofaToUse->DataLengthIR);
+        memcpy(hrir.data(), &sofaToUse->DataIR[index], sizeof(float) * sofaToUse->DataLengthIR);
+        return hrir;
     }
+    // very not real-time safe!! extremely so!
+    juce::AudioBuffer<float> readHRIRToBuffer(int azim, int elev, int dist){
+        int azimuthStep = 10;
+        int elevationStep = 10;
+        int minElevation = -90;
+        int numElevationSteps = 18;
+        for(int i = 0; i < sofa.nSources; i++){
+            printf("i: %d : %f %f %f\n", i, sofa.SourcePosition[i * 3], sofa.SourcePosition[i * 3+1], sofa.SourcePosition[i * 3+2] );
+        }
+        // Calculate source indices
+        int indexTest = calculateSourceIndex(azim, elev, azimuthStep, elevationStep, minElevation, numElevationSteps);
+        printf("Source Position: %f, %f, %f\n", sofa.SourcePosition[indexTest * 3], sofa.SourcePosition[indexTest * 3+1], sofa.SourcePosition[indexTest * 3+2]);
+        printf("Source Position Type: %s, Source Position Units: %s\n", sofa.SourcePositionType, sofa.SourcePositionUnits);
+        // Print results
+        printf("Source index for azimuth %d, elevation %d: %d\n", azim, elev, indexTest);
 
-    void writeHRTFToWav(const std::vector<float>& hrtfLeft, const std::vector<float>& hrtfRight, const String& fileName) {
+        int leftEarIndex = 0;
+        int rightEarIndex = 1;
+
+        auto hrirLeft = accessHRIR(&sofa, indexTest, leftEarIndex);
+        auto hrirRight = accessHRIR(&sofa, indexTest, rightEarIndex);
+
+        juce::AudioBuffer<float> buffer(2, (int) hrirLeft.size());
+        buffer.copyFrom(0, 0, hrirLeft.data(), (int) hrirLeft.size());
+        buffer.copyFrom(1, 0, hrirRight.data(), (int) hrirRight.size());
+
+        return buffer;
+    }
+    void writeHRIRToWav(const std::vector<float>& hrirLeft, const std::vector<float>& hrirRight, const String& fileName) {
         File file(File::getCurrentWorkingDirectory().getChildFile(fileName));
         file.deleteFile();
 
@@ -98,14 +101,14 @@ public:
             return;
         }
 
-        juce::AudioBuffer<float> buffer(2, (int) hrtfLeft.size());
-        buffer.copyFrom(0, 0, hrtfLeft.data(), (int) hrtfLeft.size());
-        buffer.copyFrom(1, 0, hrtfRight.data(), (int) hrtfRight.size());
+        juce::AudioBuffer<float> buffer(2, (int) hrirLeft.size());
+        buffer.copyFrom(0, 0, hrirLeft.data(), (int) hrirLeft.size());
+        buffer.copyFrom(1, 0, hrirRight.data(), (int) hrirRight.size());
 
         writer->writeFromAudioSampleBuffer(buffer, 0, buffer.getNumSamples());
         fileStream->flush();
 
-        std::cout << "HRTF data written to " << file.getFullPathName() << std::endl;
+        std::cout << "HRIR data written to " << file.getFullPathName() << std::endl;
 
         fileStream.release();
     }

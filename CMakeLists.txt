@@ -29,6 +29,8 @@ elseif (APPLE)
 else ()
     # LINUX
     # sudo apt-get update && sudo apt-get install libhdf5-dev libnetcdf-dev libnetcdff-dev liblapack3 liblapack-dev libopenblas-base libopenblas-dev liblapacke-dev
+    # I use arch btw:
+    # sudo pacman -S lapack lapacke openblas
     set(SAF_PERFORMANCE_LIB "SAF_USE_OPEN_BLAS_AND_LAPACKE")
 endif ()
 
@@ -89,6 +91,7 @@ target_link_libraries(${TARGET_NAME}
         AudioPluginData
         saf
         juce::juce_audio_utils
+        juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

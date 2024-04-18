@@ -1,6 +1,8 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <juce_dsp/juce_dsp.h>
+// #include <juce_Convolution.h>
 #include "PluginParameters.h"
 
 #include "dsp/SofaReader.h"
@@ -55,7 +57,7 @@ private:
     juce::AudioProcessorValueTreeState parameters;
 
     SofaReader sofaReader;
-
+    dsp::Convolution convolution;
     std::atomic<float> paramAzimuth { 0.0f };
     std::atomic<float> paramElevation { 0.0f };
 

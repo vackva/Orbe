@@ -95,7 +95,14 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    juce::ignoreUnused (sampleRate, samplesPerBlock);
+    dsp::ProcessSpec processSpec;
+    processSpec.sampleRate = sampleRate;
+    processSpec.maximumBlockSize = samplesPerBlock;
+    processSpec.numChannels = getTotalNumInputChannels();
+
+    juce::AudioBuffer<float> buffer = sofaReader.readHRIRToBuffer(0,0,1);
+    convolution.prepare(processSpec);
+    convolution.loadImpulseResponse(std::move(buffer), 44100, dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -136,15 +143,12 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+    juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::ProcessContextReplacing<float> context(block);
 
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+    convolution.process(context);
 
-    for (int i = 0; i < buffer.getNumChannels(); ++i) {
-        for (int j = 0; j <  buffer.getNumSamples(); ++j) {
-            buffer.setSample(i, j, 0.0f);
-        }
-    }
+    
 }
 
 //==============================================================================
