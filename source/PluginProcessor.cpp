@@ -99,10 +99,13 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     processSpec.sampleRate = sampleRate;
     processSpec.maximumBlockSize = samplesPerBlock;
     processSpec.numChannels = getTotalNumInputChannels();
-
-    juce::AudioBuffer<float> buffer = sofaReader.readHRIRToBuffer(0,0,1);
+    
+    sofaReader.prepare(sampleRate);
+    
+    juce::AudioBuffer<float> buffer(2, sofaReader.get_ir_length());
+    sofaReader.get_hrirs(&buffer, 0, 0, 1);
     convolution.prepare(processSpec);
-    convolution.loadImpulseResponse(std::move(buffer), 44100, dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    convolution.loadImpulseResponse(std::move(buffer), sampleRate, dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -148,6 +151,10 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     convolution.process(context);
 
+    buffer.applyGain(0.5);
+
+    
+
     
 }
 
@@ -182,6 +189,13 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
 void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, float newValue) {
     if (parameterID == PluginParameters::AZIM_ID.getParamID()) {
         paramAzimuth.store(newValue);
+        // TODO do this in a better place
+        // load HRIR for new position
+        std::cout << "loading new hrirs" << std::endl;
+        juce::AudioBuffer<float> buffer(2, sofaReader.get_ir_length());
+        sofaReader.get_hrirs(&buffer, newValue, paramElevation.load(), 1);
+        convolution.loadImpulseResponse(std::move(buffer), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+
     }
     else if (parameterID == PluginParameters::ELEV_ID.getParamID()) {
         paramElevation.store(newValue);
