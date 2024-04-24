@@ -20,13 +20,11 @@ set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries." FORCE)
 
 if (MSVC)
-    set(ZLIB_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/modules/libmysofa/windows/third-party/zlib-1.2.11/lib")
-    set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/libmysofa/windows/third-party/zlib-1.2.11/include")
-    link_directories("${CMAKE_CURRENT_SOURCE_DIR}/modules/libmysofa/windows/third-party/zlib-1.2.11/lib")
-    add_subdirectory(modules/libmysofa)
+    link_directories("${CMAKE_CURRENT_SOURCE_DIR}/modules/sofa/windows/third-party/zlib-1.2.11/lib")
+    add_subdirectory(modules/sofa)
 else()
     # Include the libmysofa project
-    add_subdirectory(modules/libmysofa)
+    add_subdirectory(modules/sofa)
 endif ()
 
 
