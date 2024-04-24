@@ -16,28 +16,17 @@ add_subdirectory(modules/JUCE)
 
 # Disable building tests for libmysofa
 set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
-
-# Include the libmysofa project
-add_subdirectory(modules/libmysofa)
-
 # Disable building shared libraries for libmysofa
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries." FORCE)
 
-
 if (MSVC)
-    include(cmake/openBLAS.cmake)
-    #set(SAF_PERFORMANCE_LIB "SAF_USE_OPEN_BLAS_AND_LAPACKE")
-    set(OPENBLAS_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/lib/libopenblas.lib")
-    set(LAPACKE_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/lib/libopenblas.lib")
-    set(OPENBLAS_HEADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/include")
-elseif (APPLE)
-    # set(SAF_PERFORMANCE_LIB "SAF_USE_APPLE_ACCELERATE")
-else ()
-    # LINUX
-    # sudo apt-get update && sudo apt-get install libhdf5-dev libnetcdf-dev libnetcdff-dev liblapack3 liblapack-dev libopenblas-base libopenblas-dev liblapacke-dev
-    # I use arch btw:
-    # sudo pacman -S lapack lapacke openblas
-    # set(SAF_PERFORMANCE_LIB "SAF_USE_OPEN_BLAS_AND_LAPACKE")
+    set(ZLIB_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/modules/libmysofa/windows/third-party/zlib-1.2.11/lib")
+    set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/libmysofa/windows/third-party/zlib-1.2.11/include")
+    link_directories("${CMAKE_CURRENT_SOURCE_DIR}/modules/libmysofa/windows/third-party/zlib-1.2.11/lib")
+    add_subdirectory(modules/libmysofa)
+else()
+    # Include the libmysofa project
+    add_subdirectory(modules/libmysofa)
 endif ()
 
 
@@ -102,19 +91,3 @@ target_link_libraries(${TARGET_NAME}
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
-
-
-if (MSVC)
-    set(copy_shard_libs
-            "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/bin/libopenblas.dll"
-    )
-
-    foreach(FORMAT IN LISTS FORMATS_TO_BUILD)
-        string(CONCAT CONCATENATED_TARGET ${TARGET_NAME}_${FORMAT})
-        add_custom_command(TARGET ${CONCATENATED_TARGET}
-                POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${copy_shard_libs}
-                $<TARGET_FILE_DIR:${TARGET_NAME}>/${FORMAT})
-    endforeach()
-endif (MSVC)
