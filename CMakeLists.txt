@@ -16,17 +16,14 @@ add_subdirectory(modules/JUCE)
 
 # Disable building tests for libmysofa
 set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
+
+# Include the libmysofa project
+add_subdirectory(modules/libmysofa)
+
 # Disable building shared libraries for libmysofa
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries." FORCE)
 
-if (MSVC)
-    link_directories("${CMAKE_CURRENT_SOURCE_DIR}/modules/sofa/windows/third-party/zlib-1.2.11/lib")
-    add_subdirectory(modules/sofa)
-else()
-    # Include the libmysofa project
-    add_subdirectory(modules/sofa)
-endif ()
-
+add_subdirectory(modules/libmysofa)
 
 juce_add_plugin(${TARGET_NAME}
     # VERSION ...                               # Set this if the plugin version is different to the project version
@@ -89,3 +86,19 @@ target_link_libraries(${TARGET_NAME}
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
+
+
+if (MSVC)
+    set(copy_shard_libs
+            "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/bin/libopenblas.dll"
+    )
+
+    foreach(FORMAT IN LISTS FORMATS_TO_BUILD)
+        string(CONCAT CONCATENATED_TARGET ${TARGET_NAME}_${FORMAT})
+        add_custom_command(TARGET ${CONCATENATED_TARGET}
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${copy_shard_libs}
+                $<TARGET_FILE_DIR:${TARGET_NAME}>/${FORMAT})
+    endforeach()
+endif (MSVC)
