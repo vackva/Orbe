@@ -9,32 +9,37 @@ else() # Maybe add LV2 here for Linux
     set(FORMATS_TO_BUILD VST3 Standalone)
 endif()
 
+
 # find_package(JUCE CONFIG REQUIRED)
 add_subdirectory(modules/JUCE)
 
+
+# Disable building tests for libmysofa
+set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
+
+# Include the libmysofa project
+add_subdirectory(modules/libmysofa)
+
+# Disable building shared libraries for libmysofa
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries." FORCE)
-set(SAF_BUILD_TESTS OFF CACHE BOOL "Build SAF unit tests." FORCE)
-set(SAF_BUILD_EXAMPLES OFF CACHE BOOL "Build SAF examples." FORCE)
-set(SAF_BUILD_EXTRAS OFF CACHE BOOL "Build SAF extras." FORCE)
-set(SAF_ENABLE_SOFA_READER_MODULE ON CACHE BOOL "Enable the SAF SOFA READER module" FORCE)
+
 
 if (MSVC)
     include(cmake/openBLAS.cmake)
-    set(SAF_PERFORMANCE_LIB "SAF_USE_OPEN_BLAS_AND_LAPACKE")
+    #set(SAF_PERFORMANCE_LIB "SAF_USE_OPEN_BLAS_AND_LAPACKE")
     set(OPENBLAS_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/lib/libopenblas.lib")
     set(LAPACKE_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/lib/libopenblas.lib")
     set(OPENBLAS_HEADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/modules/OpenBLAS-${OPEN_BLAS_VERSION}/include")
 elseif (APPLE)
-    set(SAF_PERFORMANCE_LIB "SAF_USE_APPLE_ACCELERATE")
+    # set(SAF_PERFORMANCE_LIB "SAF_USE_APPLE_ACCELERATE")
 else ()
     # LINUX
     # sudo apt-get update && sudo apt-get install libhdf5-dev libnetcdf-dev libnetcdff-dev liblapack3 liblapack-dev libopenblas-base libopenblas-dev liblapacke-dev
     # I use arch btw:
     # sudo pacman -S lapack lapacke openblas
-    set(SAF_PERFORMANCE_LIB "SAF_USE_OPEN_BLAS_AND_LAPACKE")
+    # set(SAF_PERFORMANCE_LIB "SAF_USE_OPEN_BLAS_AND_LAPACKE")
 endif ()
 
-add_subdirectory(modules/SAF)
 
 juce_add_plugin(${TARGET_NAME}
     # VERSION ...                               # Set this if the plugin version is different to the project version
@@ -89,9 +94,9 @@ juce_add_binary_data(AudioPluginData SOURCES
 target_link_libraries(${TARGET_NAME}
     PRIVATE
         AudioPluginData
-        saf
         juce::juce_audio_utils
         juce::juce_dsp
+        mysofa-static 
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
