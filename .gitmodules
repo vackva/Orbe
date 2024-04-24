@@ -1,6 +1,3 @@
 [submodule "modules/JUCE"]
 	path = modules/JUCE
 	url = https://github.com/juce-framework/JUCE
-[submodule "modules/libmysofa"]
-	path = modules/libmysofa
-	url = https://github.com/hoene/libmysofa.git
