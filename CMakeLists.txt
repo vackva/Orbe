@@ -85,6 +85,7 @@ target_compile_definitions(${TARGET_NAME}
         JUCE_USE_CURL=0     # If you remove this, add `NEEDS_CURL TRUE` to the `juce_add_plugin` call
         JUCE_VST3_CAN_REPLACE_VST2=0
         SOFA_TEST_FILE_PATH="${SOFA_TEST_FILE}"
+        JUCE_SILENCE_XCODE_15_LINKER_WARNING=1
 )
 
 juce_add_binary_data(AudioPluginData SOURCES
