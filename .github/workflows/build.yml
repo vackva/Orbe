@@ -47,19 +47,6 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Check Xcode version
-        if: contains(matrix.os, 'macOS')
-        run: |
-          version=$(xcodebuild -version | grep Xcode | cut -d' ' -f2)
-          required_version="15.1"
-          if [[ $(echo "$version $required_version" | awk '{print ($1 < $2)}') -eq 1 ]]; then
-            echo "Xcode version is $version, which is less than the required $required_version"
-            exit 1
-          else
-            echo "Xcode version is $version and meets the requirement"
-          fi
-
-
       #A simple printout of the matrix
       -   name: printout
           shell: bash
