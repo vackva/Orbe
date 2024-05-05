@@ -16,6 +16,10 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     for (auto & parameterID : PluginParameters::getPluginParameterList()) {
         parameters.addParameterListener(parameterID, this);
     }
+
+    paramAzimuth.store(PluginParameters::defaultAzimParam);
+    paramElevation.store(PluginParameters::defaultElevParam);
+    paramDistance.store(PluginParameters::defaultDistParam);
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
@@ -65,8 +69,7 @@ double AudioPluginAudioProcessor::getTailLengthSeconds() const
 
 int AudioPluginAudioProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    return 1;
 }
 
 int AudioPluginAudioProcessor::getCurrentProgram()
@@ -93,19 +96,16 @@ void AudioPluginAudioProcessor::changeProgramName (int index, const juce::String
 //==============================================================================
 void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
-    dsp::ProcessSpec processSpec;
-    processSpec.sampleRate = sampleRate;
-    processSpec.maximumBlockSize = samplesPerBlock;
-    processSpec.numChannels = getTotalNumInputChannels();
+    dsp::ProcessSpec processSpec {sampleRate,
+                                  (juce::uint32) samplesPerBlock,
+                                  (juce::uint32) getTotalNumInputChannels() };
     
     sofaReader.prepare(sampleRate);
-    
-    juce::AudioBuffer<float> buffer(2, sofaReader.get_ir_length());
-    sofaReader.get_hrirs(&buffer, 0, 0, 1);
+    hrirBuffer.setSize(getTotalNumInputChannels(), sofaReader.get_ir_length());
     convolution.prepare(processSpec);
-    convolution.loadImpulseResponse(std::move(buffer), sampleRate, dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+
+    std::cout << hrirBuffer.getNumChannels() << std::endl;
+    updateHRIR();
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -116,52 +116,36 @@ void AudioPluginAudioProcessor::releaseResources()
 
 bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    // Check if both the input and output layouts are stereo.
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo() ||
+        layouts.getMainInputChannelSet() != juce::AudioChannelSet::stereo()) {
         return false;
-
-    // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-   #endif
+    }
 
     return true;
-  #endif
 }
 
 void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused (midiMessages);
-
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    if (hrirChanged.load()) {
+        updateHRIR();
+    }
+
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
-
     convolution.process(context);
 
     buffer.applyGain(0.5);
-
-    
-
-    
 }
 
 //==============================================================================
 bool AudioPluginAudioProcessor::hasEditor() const
 {
-    return true; // (change this to false if you choose to not supply an editor)
+    return true;
 }
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
@@ -173,32 +157,29 @@ juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 //==============================================================================
 void AudioPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
-    juce::ignoreUnused (destData);
+    auto state = parameters.copyState();
+    std::unique_ptr<juce::XmlElement> xml (state.createXml());
+    copyXmlToBinary (*xml, destData);
 }
 
 void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-    juce::ignoreUnused (data, sizeInBytes);
+    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName (parameters.state.getType()))
+            parameters.replaceState (juce::ValueTree::fromXml (*xmlState));
 }
 
 void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, float newValue) {
     if (parameterID == PluginParameters::AZIM_ID.getParamID()) {
         paramAzimuth.store(newValue);
-        // TODO do this in a better place
-        // load HRIR for new position
-        std::cout << "loading new hrirs" << std::endl;
-        juce::AudioBuffer<float> buffer(2, sofaReader.get_ir_length());
-        sofaReader.get_hrirs(&buffer, newValue, paramElevation.load(), 1);
-        convolution.loadImpulseResponse(std::move(buffer), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-
-    }
-    else if (parameterID == PluginParameters::ELEV_ID.getParamID()) {
+        hrirChanged.store(true);
+    } else if (parameterID == PluginParameters::ELEV_ID.getParamID()) {
         paramElevation.store(newValue);
+        hrirChanged.store(true);
+    } else if (parameterID == PluginParameters::DIST_ID.getParamID()) {
+        paramDistance.store(newValue);
     }
 }
 
@@ -216,6 +197,17 @@ float AudioPluginAudioProcessor::getAtomicParameterValue(const String &parameter
 
 juce::AudioProcessorValueTreeState &AudioPluginAudioProcessor::getValueTreeState() {
     return parameters;
+}
+
+void AudioPluginAudioProcessor::updateHRIR() {
+    if (hrirBuffer.getNumChannels() == 0) {
+        // since we are moving the buffer to the convolution, we have to resize..
+        // TODO thread safe solution
+        hrirBuffer.setSize(2, sofaReader.get_ir_length());
+    }
+    hrirChanged.store(false);
+    sofaReader.get_hrirs(hrirBuffer, paramAzimuth.load(), paramElevation.load(), 1);
+    convolution.loadImpulseResponse(std::move(hrirBuffer), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
 }
 
 //==============================================================================

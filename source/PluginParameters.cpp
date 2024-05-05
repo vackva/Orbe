@@ -6,22 +6,22 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
     params.push_back(std::make_unique<juce::AudioParameterFloat>(AZIM_ID,
                                                                  AZIM_NAME,
                                                                  azimRange,
-                                                                 0.f));
+                                                                 defaultAzimParam));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(ELEV_ID,
                                                                  ELEV_NAME,
                                                                  elevRange,
-                                                                 90.f));
+                                                                 defaultElevParam));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(DIST_ID,
                                                                  DIST_NAME,
                                                                  distRange,
-                                                                 1.f));
+                                                                 defaultDistParam));
 
     params.push_back( std::make_unique<juce::AudioParameterFloat>(DRY_WET_ID,
                                                                   DRY_WET_NAME,
                                                                   dryWetRange,
-                                                                  1.f,
+                                                                  defaultDryWetParam,
                                                                   percentage_attributes));
 
     for (const auto & param : params) {

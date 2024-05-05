@@ -16,9 +16,10 @@ public:
 
     ~SofaReader() {
         mysofa_close(*sofa);
+        sofa.reset();
     }
 
-    void prepare(int samplerate){
+    void prepare(double samplerate){
         if (sofa != nullptr){
             sofa.reset();
         }
@@ -35,21 +36,23 @@ public:
                 return;
         }
     }
+
     int get_ir_length(){
         return ir_length;
     }
-    void get_hrirs(juce::AudioBuffer<float>* buffer, float azim, float elev, float dist){
-        float* leftir = buffer->getWritePointer(0);
-        float* rightir = buffer->getWritePointer(1);
-        float leftdelay;
-        float rightdelay; 
+
+    void get_hrirs(juce::AudioBuffer<float>& buffer, float azim, float elev, float dist){
+        auto leftIR = buffer.getWritePointer(0);
+        auto rightIR = buffer.getWritePointer(1);
+        float leftDelay;
+        float rightDelay;
         // convert coordinates to xyz
         coordinate_buffer[0] = azim;
         coordinate_buffer[1] = elev;
         coordinate_buffer[2] = dist;
         mysofa_s2c((float *) &coordinate_buffer);
 
-        mysofa_getfilter_float(*sofa, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftir, rightir, &leftdelay, &rightdelay);
+        mysofa_getfilter_float(*sofa, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
     }
 
 private:

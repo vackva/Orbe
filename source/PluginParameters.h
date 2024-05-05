@@ -22,6 +22,11 @@ public:
     static juce::StringArray getPluginParameterList();
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
+    const inline static float defaultAzimParam { 0.f };
+    const inline static float defaultElevParam { 90.f };
+    const inline static float defaultDistParam { 1.f };
+    const inline static float defaultDryWetParam { 1.f };
+
 private:
     inline static juce::StringArray parameterList;
     inline static juce::NormalisableRange<float> azimRange {-180.0f, 180.0f, 1.0f},

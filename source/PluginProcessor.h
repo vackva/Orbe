@@ -52,14 +52,20 @@ public:
 
 private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
+    void updateHRIR();
 
 private:
     juce::AudioProcessorValueTreeState parameters;
 
     SofaReader sofaReader;
+
+    juce::AudioBuffer<float> hrirBuffer;
     dsp::Convolution convolution;
+
     std::atomic<float> paramAzimuth { 0.0f };
     std::atomic<float> paramElevation { 0.0f };
+    std::atomic<float> paramDistance { 0.0f };
+    std::atomic<bool> hrirChanged { false };
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
