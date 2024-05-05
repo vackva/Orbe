@@ -4,3 +4,6 @@
 [submodule "modules/libmysofa"]
 	path = modules/libmysofa
 	url = https://github.com/hoene/libmysofa.git
+[submodule "modules/customlibmysofa"]
+	path = modules/customlibmysofa
+	url = https://github.com/vackva/libmysofa
