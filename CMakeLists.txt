@@ -22,6 +22,9 @@ if(MSVC)
     add_subdirectory(modules/customlibmysofa SYSTEM)
 else()
     add_subdirectory(modules/libmysofa SYSTEM)
+    if (NOT APPLE)
+        set_target_properties(mysofa-static PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif ()
 endif()
 
 
