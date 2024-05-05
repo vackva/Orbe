@@ -15,15 +15,16 @@ public:
     }
 
     ~SofaReader() {
-        mysofa_close(sofa);
+        mysofa_close(*sofa);
     }
 
     void prepare(int samplerate){
         if (sofa != nullptr){
-            mysofa_close(sofa);
+            sofa.reset();
         }
         int err;
-        sofa = mysofa_open(SOFA_TEST_FILE_PATH, static_cast<float>(samplerate), &ir_length, &err);
+        std::cout << SOFA_TEST_FILE_PATH << std::endl;
+        sofa = std::make_unique<MYSOFA_EASY*>(mysofa_open(SOFA_TEST_FILE_PATH, static_cast<float>(samplerate), &ir_length, &err));
         switch (err) {
             case MYSOFA_OK:
                 std::cout << "Successfully loaded Sofa File" << std::endl;
@@ -48,13 +49,13 @@ public:
         coordinate_buffer[2] = dist;
         mysofa_s2c((float *) &coordinate_buffer);
 
-        mysofa_getfilter_float(sofa, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftir, rightir, &leftdelay, &rightdelay);
+        mysofa_getfilter_float(*sofa, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftir, rightir, &leftdelay, &rightdelay);
     }
 
 private:
     int ir_length;
     float coordinate_buffer[3];
-    MYSOFA_EASY* sofa;
+    std::unique_ptr<MYSOFA_EASY*> sofa;
 };
 
 #endif //BINAURALPANNER_SOFAREADER_H

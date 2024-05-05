@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
+cmake_policy(SET CMP0048 NEW)
+
 project(BinauralPanner VERSION 0.0.1)
 set (TARGET_NAME ${PROJECT_NAME})
 
@@ -14,13 +16,9 @@ endif()
 add_subdirectory(modules/JUCE)
 
 
-# Disable building tests for libmysofa
 set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
-
-# Disable building shared libraries for libmysofa
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries." FORCE)
-
-add_subdirectory(modules/libmysofa)
+add_subdirectory(modules/custom/libmysofa SYSTEM)
 
 juce_add_plugin(${TARGET_NAME}
     # VERSION ...                               # Set this if the plugin version is different to the project version
@@ -83,3 +81,11 @@ target_link_libraries(${TARGET_NAME}
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
+
+
+# Disable all wanrings from mysofa
+if(MSVC)
+    set_target_properties(mysofa-static PROPERTIES COMPILE_OPTIONS "/W0")
+else()
+    set_target_properties(mysofa-static PROPERTIES COMPILE_OPTIONS "-w")
+endif()
