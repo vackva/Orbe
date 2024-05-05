@@ -20,6 +20,10 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     paramAzimuth.store(PluginParameters::defaultAzimParam);
     paramElevation.store(PluginParameters::defaultElevParam);
     paramDistance.store(PluginParameters::defaultDistParam);
+
+    hrirLoader.newHRIRAvailable = [this] () {
+        hrirAvailable.store(true);
+    };
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
@@ -99,13 +103,13 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     dsp::ProcessSpec processSpec {sampleRate,
                                   (juce::uint32) samplesPerBlock,
                                   (juce::uint32) getTotalNumInputChannels() };
-    
-    sofaReader.prepare(sampleRate);
-    hrirBuffer.setSize(getTotalNumInputChannels(), sofaReader.get_ir_length());
+
+    hrirLoader.prepare(processSpec);
     convolution.prepare(processSpec);
 
-    std::cout << hrirBuffer.getNumChannels() << std::endl;
-    updateHRIR();
+    convolutionReady = false;
+
+    requestNewHRIR();
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -131,13 +135,20 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::ignoreUnused (midiMessages);
     juce::ScopedNoDenormals noDenormals;
 
-    if (hrirChanged.load()) {
+    if (hrirAvailable.load()) {
         updateHRIR();
+    }
+
+    if (hrirRequestDenied) {
+        hrirRequestDenied = false;
+        requestNewHRIR();
     }
 
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
-    convolution.process(context);
+    if (convolutionReady) {
+        convolution.process(context);
+    }
 
     buffer.applyGain(0.5);
 }
@@ -174,10 +185,10 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
 void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, float newValue) {
     if (parameterID == PluginParameters::AZIM_ID.getParamID()) {
         paramAzimuth.store(newValue);
-        hrirChanged.store(true);
+        requestNewHRIR();
     } else if (parameterID == PluginParameters::ELEV_ID.getParamID()) {
         paramElevation.store(newValue);
-        hrirChanged.store(true);
+        requestNewHRIR();
     } else if (parameterID == PluginParameters::DIST_ID.getParamID()) {
         paramDistance.store(newValue);
     }
@@ -200,14 +211,10 @@ juce::AudioProcessorValueTreeState &AudioPluginAudioProcessor::getValueTreeState
 }
 
 void AudioPluginAudioProcessor::updateHRIR() {
-    if (hrirBuffer.getNumChannels() == 0) {
-        // since we are moving the buffer to the convolution, we have to resize..
-        // TODO thread safe solution
-        hrirBuffer.setSize(2, sofaReader.get_ir_length());
-    }
-    hrirChanged.store(false);
-    sofaReader.get_hrirs(hrirBuffer, paramAzimuth.load(), paramElevation.load(), 1);
-    convolution.loadImpulseResponse(std::move(hrirBuffer), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    hrirAvailable.store(false);
+    convolution.loadImpulseResponse(std::move(hrirLoader.getHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    hrirLoader.hrirAccessed();
+    convolutionReady = true;
 }
 
 //==============================================================================

@@ -51,6 +51,9 @@ target_sources(${TARGET_NAME}
         source/PluginProcessor.cpp
         source/PluginParameters.cpp
 
+        source/dsp/HRIRLoader.cpp
+        source/dsp/SofaReader.cpp
+
         source/ui/PannerVisualisation.cpp
         source/ui/BackgroundComponent.cpp
 )

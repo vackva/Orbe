@@ -2,10 +2,9 @@
 
 #include <JuceHeader.h>
 #include <juce_dsp/juce_dsp.h>
-// #include <juce_Convolution.h>
-#include "PluginParameters.h"
 
-#include "dsp/SofaReader.h"
+#include "PluginParameters.h"
+#include "dsp/HRIRLoader.h"
 
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor, private juce::AudioProcessorValueTreeState::Listener
@@ -53,14 +52,19 @@ public:
 private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
     void updateHRIR();
-
+    void requestNewHRIR() {
+        auto success = hrirLoader.submitJob(paramAzimuth.load(), paramElevation.load());
+        hrirRequestDenied = !success;
+    }
 private:
     juce::AudioProcessorValueTreeState parameters;
 
-    SofaReader sofaReader;
-
-    juce::AudioBuffer<float> hrirBuffer;
     dsp::Convolution convolution;
+    HRIRLoader hrirLoader;
+
+    bool hrirRequestDenied = false;
+    std::atomic<bool> hrirAvailable { false };
+    bool convolutionReady = false;
 
     std::atomic<float> paramAzimuth { 0.0f };
     std::atomic<float> paramElevation { 0.0f };
