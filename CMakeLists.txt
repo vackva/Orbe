@@ -17,16 +17,11 @@ add_subdirectory(modules/JUCE)
 
 set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries." FORCE)
+add_subdirectory(modules/customlibmysofa SYSTEM)
 
-if(MSVC)
-    add_subdirectory(modules/customlibmysofa SYSTEM)
-else()
-    add_subdirectory(modules/customlibmysofa SYSTEM)
-    if (NOT APPLE)
-        set_target_properties(mysofa-static PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    endif ()
+if(UNIX AND NOT APPLE)
+    set_target_properties(mysofa-static PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-
 
 juce_add_plugin(${TARGET_NAME}
     # VERSION ...                               # Set this if the plugin version is different to the project version
