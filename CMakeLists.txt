@@ -15,10 +15,15 @@ endif()
 # find_package(JUCE CONFIG REQUIRED)
 add_subdirectory(modules/JUCE)
 
-
 set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries." FORCE)
-add_subdirectory(modules/custom/libmysofa SYSTEM)
+
+if(MSVC)
+    add_subdirectory(modules/customlibmysofa SYSTEM)
+else()
+    add_subdirectory(modules/libmysofa SYSTEM)
+endif()
+
 
 juce_add_plugin(${TARGET_NAME}
     # VERSION ...                               # Set this if the plugin version is different to the project version
