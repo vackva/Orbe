@@ -21,7 +21,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries."
 if(MSVC)
     add_subdirectory(modules/customlibmysofa SYSTEM)
 else()
-    add_subdirectory(modules/libmysofa SYSTEM)
+    add_subdirectory(modules/customlibmysofa SYSTEM)
     if (NOT APPLE)
         set_target_properties(mysofa-static PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif ()
