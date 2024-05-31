@@ -18,6 +18,21 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
                                                                  distRange,
                                                                  defaultDistParam));
 
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(X_ID,
+                                                                 X_NAME,
+                                                                 xRange,
+                                                                 0.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(Y_ID,
+                                                                 Y_NAME,
+                                                                 xRange,
+                                                                 0.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(Z_ID,
+                                                                 Z_NAME,
+                                                                 xRange,
+                                                                 0.0f));
+
     params.push_back( std::make_unique<juce::AudioParameterFloat>(DRY_WET_ID,
                                                                   DRY_WET_NAME,
                                                                   dryWetRange,

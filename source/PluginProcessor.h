@@ -53,13 +53,17 @@ private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
     void updateHRIR();
     void requestNewHRIR() {
-        auto success = hrirLoader.submitJob(paramAzimuth.load(), paramElevation.load());
+        bool success = hrirLoader.submitJob(paramAzimuth.load(), paramElevation.load());
         hrirRequestDenied = !success;
     }
 private:
     juce::AudioProcessorValueTreeState parameters;
 
+    // Malte TODO
+
     dsp::Convolution convolution;
+    //dsp::Convolution convolution2;
+
     HRIRLoader hrirLoader;
 
     bool hrirRequestDenied = false;

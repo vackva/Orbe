@@ -35,6 +35,9 @@ private:
     juce::dsp::ProcessSpec currentSpec;
     HRIRJob requestedHRIR;
     juce::AudioBuffer<float> hrirBuffer;
+
+    // Malte TODO
+    //juce::AudioBuffer<float> prevHrirBuffer;
 };
 
 
