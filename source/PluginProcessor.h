@@ -59,10 +59,10 @@ private:
 private:
     juce::AudioProcessorValueTreeState parameters;
 
-    // Malte TODO
-
-    dsp::Convolution convolution;
-    //dsp::Convolution convolution2;
+    dsp::Convolution currentConvolution;
+    dsp::Convolution previousConvolution;
+    
+    juce::AudioBuffer<float> bufferCopy;
 
     HRIRLoader hrirLoader;
 

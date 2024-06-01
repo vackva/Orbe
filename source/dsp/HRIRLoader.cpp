@@ -20,9 +20,16 @@ void HRIRLoader::run() {
     while (!threadShouldExit()) {
         if (jobSubmitted.load()) {
             jobSubmitted.store(false);
-
-            hrirBuffer.setSize(currentSpec.numChannels, sofaReader.get_ir_length());
-            sofaReader.get_hrirs(hrirBuffer, requestedHRIR.azm, requestedHRIR.elev, 1);
+            
+            // set previous hrir to last temp hrir
+            previousHrirBuffer.makeCopyOf(tempHrirBuffer);
+            
+            // get current hrir
+            currentHrirBuffer.setSize(currentSpec.numChannels, sofaReader.get_ir_length());
+            sofaReader.get_hrirs(currentHrirBuffer, requestedHRIR.azm, requestedHRIR.elev, 1);
+            
+            // copy current hrir to temp hrir
+            tempHrirBuffer.makeCopyOf(currentHrirBuffer);
 
             newHRIRAvailable();
         } else {
@@ -46,8 +53,12 @@ bool HRIRLoader::submitJob(float azm, float elev) {
     }
 }
 
-juce::AudioBuffer<float> &HRIRLoader::getHRIR() {
-    return hrirBuffer;
+juce::AudioBuffer<float> &HRIRLoader::getCurrentHRIR() {
+    return currentHrirBuffer;
+}
+
+juce::AudioBuffer<float> &HRIRLoader::getPreviousHRIR() {
+    return previousHrirBuffer;
 }
 
 void HRIRLoader::hrirAccessed() {

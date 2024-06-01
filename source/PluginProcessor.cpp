@@ -105,7 +105,11 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
                                   (juce::uint32) getTotalNumInputChannels() };
 
     hrirLoader.prepare(processSpec);
-    convolution.prepare(processSpec);
+    
+    currentConvolution.prepare(processSpec);
+    previousConvolution.prepare(processSpec);
+    
+    bufferCopy.setSize(processSpec.numChannels, processSpec.maximumBlockSize);
 
     convolutionReady = false;
 
@@ -135,16 +139,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::ignoreUnused (midiMessages);
     juce::ScopedNoDenormals noDenormals;
 
-    // Malte TODO
-    // 2 AudioBuffer Stereo (berets in header definiert und speicher allociert)
-
-    //stereoAudioBuffer1.copyBuffer(buffer)
-    //stereoAudioBuffer2.copyBuffer(buffer)
-
-    // convolution1.process(stereoAudioBuffer1);
-    // convolution2.process(stereoAudioBuffer2);
-
-    // mix stereoAudioBuffer1 und stereoAudioBuffer2 and write into buffer
+    // copy avoiding allocation -> check if really no memory gets allocated
+    bufferCopy.makeCopyOf(buffer, true);
 
     if (hrirAvailable.load()) {
         updateHRIR();
@@ -156,10 +152,23 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     }
 
     juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::AudioBlock<float> blockCopy(bufferCopy);
+    
     juce::dsp::ProcessContextReplacing<float> context(block);
+    juce::dsp::ProcessContextReplacing<float> contextCopy(blockCopy);
+    
     if (convolutionReady) {
-        convolution.process(context);
+        currentConvolution.process(context);
+        previousConvolution.process(contextCopy);
     }
+    
+    // mix buffers convolved with current and previous hrir
+    for (int channel = 0; channel < buffer.getNumChannels(); channel++)
+    {
+        buffer.addFrom(channel, 0, bufferCopy, channel, 0, buffer.getNumSamples())
+    }
+    
+    buffer.applyGain(0.5);
 
     buffer.applyGain(0.5);
 }
@@ -223,12 +232,9 @@ juce::AudioProcessorValueTreeState &AudioPluginAudioProcessor::getValueTreeState
 
 void AudioPluginAudioProcessor::updateHRIR() {
     hrirAvailable.store(false);
-    convolution.loadImpulseResponse(std::move(hrirLoader.getHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-
-    // Malte TODO
-
-    // convolution1.loadImpulseResponse(std::move(hrirLoader.getPrevious()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-    // convolution2.loadImpulseResponse(std::move(hrirLoader.getNewHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    
+    currentConvolution.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    previousConvolution(std::move(hrirLoader.getCPreviousHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
 
     hrirLoader.hrirAccessed();
     convolutionReady = true;

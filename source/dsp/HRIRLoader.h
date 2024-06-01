@@ -19,7 +19,8 @@ public:
 
     void hrirAccessed ();
 
-    juce::AudioBuffer<float>& getHRIR();
+    juce::AudioBuffer<float>& getCurrentHRIR();
+    juce::AudioBuffer<float>& getPreviousHRIR();
 
     // TODO replace with Listener
     std::function<void()> newHRIRAvailable;
@@ -34,10 +35,11 @@ private:
     SofaReader sofaReader;
     juce::dsp::ProcessSpec currentSpec;
     HRIRJob requestedHRIR;
-    juce::AudioBuffer<float> hrirBuffer;
+    
+    juce::AudioBuffer<float> currentHrirBuffer;
+    juce::AudioBuffer<float> previousHrirBuffer;
+    juce::AudioBuffer<float> tempHrirBuffer;
 
-    // Malte TODO
-    //juce::AudioBuffer<float> prevHrirBuffer;
 };
 
 
