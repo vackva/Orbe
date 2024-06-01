@@ -165,7 +165,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // mix buffers convolved with current and previous hrir
     for (int channel = 0; channel < buffer.getNumChannels(); channel++)
     {
-        buffer.addFrom(channel, 0, bufferCopy, channel, 0, buffer.getNumSamples())
+        buffer.addFrom(channel, 0, bufferCopy, channel, 0, buffer.getNumSamples());
     }
     
     buffer.applyGain(0.5);
@@ -234,7 +234,7 @@ void AudioPluginAudioProcessor::updateHRIR() {
     hrirAvailable.store(false);
     
     currentConvolution.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-    previousConvolution(std::move(hrirLoader.getCPreviousHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    previousConvolution.loadImpulseResponse(std::move(hrirLoader.getPreviousHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
 
     hrirLoader.hrirAccessed();
     convolutionReady = true;
