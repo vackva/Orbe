@@ -69,11 +69,12 @@ private:
     bool hrirRequestDenied = false;
     std::atomic<bool> hrirAvailable { false };
     bool convolutionReady = false;
+    bool hrirChanged = false;
 
     std::atomic<float> paramAzimuth { 0.0f };
     std::atomic<float> paramElevation { 0.0f };
     std::atomic<float> paramDistance { 0.0f };
-    std::atomic<bool> hrirChanged { false };
+    //std::atomic<bool> hrirChanged { false }; // not used?? -> if needed other member with same name has to be changed
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

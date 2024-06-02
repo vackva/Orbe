@@ -139,9 +139,6 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::ignoreUnused (midiMessages);
     juce::ScopedNoDenormals noDenormals;
 
-    // copy avoiding allocation -> check if really no memory gets allocated
-    bufferCopy.makeCopyOf(buffer, true);
-
     if (hrirAvailable.load()) {
         updateHRIR();
     }
@@ -150,25 +147,41 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         hrirRequestDenied = false;
         requestNewHRIR();
     }
-
+    
     juce::dsp::AudioBlock<float> block(buffer);
-    juce::dsp::AudioBlock<float> blockCopy(bufferCopy);
-    
     juce::dsp::ProcessContextReplacing<float> context(block);
-    juce::dsp::ProcessContextReplacing<float> contextCopy(blockCopy);
     
-    if (convolutionReady) {
-        currentConvolution.process(context);
-        previousConvolution.process(contextCopy);
-    }
-    
-    // mix buffers convolved with current and previous hrir
-    for (int channel = 0; channel < buffer.getNumChannels(); channel++)
+
+    if (convolutionReady) 
     {
-        buffer.addFrom(channel, 0, bufferCopy, channel, 0, buffer.getNumSamples());
+        currentConvolution.process(context);
+        
+        if (hrirChanged)
+        {
+            // copy avoiding allocation -> check if really no memory gets allocated
+            bufferCopy.makeCopyOf(buffer, true);
+            juce::dsp::AudioBlock<float> blockCopy(bufferCopy);
+            
+            juce::dsp::ProcessContextReplacing<float> contextCopy(blockCopy);
+            
+            previousConvolution.process(contextCopy);
+            
+            // mix buffers convolved with current and previous hrir
+            for (int channel = 0; channel < buffer.getNumChannels(); channel++)
+            {
+                buffer.addFrom(channel, 0, bufferCopy, channel, 0, buffer.getNumSamples());
+            }
+            
+            buffer.applyGain(0.5); // to compensate for mixing
+            
+            hrirChanged = false;
+        }
+        
     }
+
+    // Malte TODO get and apply delay
     
-    buffer.applyGain(0.5);
+    
 
     buffer.applyGain(0.5);
 }
@@ -238,6 +251,7 @@ void AudioPluginAudioProcessor::updateHRIR() {
 
     hrirLoader.hrirAccessed();
     convolutionReady = true;
+    hrirChanged = true;
 }
 
 //==============================================================================
