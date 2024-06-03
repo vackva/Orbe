@@ -74,6 +74,7 @@ private:
     std::atomic<float> paramElevation { 0.0f };
     std::atomic<float> paramDistance { 0.0f };
     std::atomic<bool> hrirChanged { false };
+    float lastDistanceGain = 0.0f;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

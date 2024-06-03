@@ -160,8 +160,10 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     if (convolutionReady) {
         convolution.process(context);
     }
-
+    float distanceGain =  1 / paramDistance.load();
     buffer.applyGain(0.5);
+    buffer.applyGainRamp(0, buffer.getNumSamples(), lastDistanceGain, distanceGain);
+    lastDistanceGain = distanceGain;
 }
 
 //==============================================================================
@@ -211,6 +213,9 @@ float AudioPluginAudioProcessor::getAtomicParameterValue(const String &parameter
     }
     else if (parameterID == PluginParameters::ELEV_ID.getParamID()) {
         return paramElevation.load();
+    }
+    else if (parameterID == PluginParameters::DIST_ID.getParamID()) {
+        return paramDistance.load();
     }
     else {
         return 0.0f;
