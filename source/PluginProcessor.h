@@ -49,6 +49,8 @@ public:
     float getAtomicParameterValue(const juce::String& parameterID);
     juce::AudioProcessorValueTreeState& getValueTreeState();
 
+    std::vector<std::unique_ptr<ParameterListener>> parameterListeners;
+
 private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
     void updateHRIR();
@@ -59,7 +61,7 @@ private:
 private:
     juce::AudioProcessorValueTreeState parameters;
 
-    // Malte TODO
+    // Malte TODOgit 
 
     dsp::Convolution convolution;
     //dsp::Convolution convolution2;
@@ -70,9 +72,13 @@ private:
     std::atomic<bool> hrirAvailable { false };
     bool convolutionReady = false;
 
+
     std::atomic<float> paramAzimuth { 0.0f };
     std::atomic<float> paramElevation { 0.0f };
     std::atomic<float> paramDistance { 0.0f };
+    std::atomic<float> paramX { 0.0f };
+    std::atomic<float> paramY { 0.0f };
+    std::atomic<float> paramZ { 0.0f };
     std::atomic<bool> hrirChanged { false };
 
     //==============================================================================

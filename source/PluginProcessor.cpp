@@ -14,12 +14,18 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
        parameters (*this, nullptr, juce::Identifier (ProjectInfo::projectName), PluginParameters::createParameterLayout())
 {
     for (auto & parameterID : PluginParameters::getPluginParameterList()) {
-        parameters.addParameterListener(parameterID, this);
+        auto listener = std::make_unique<ParameterListener>(parameters, parameterID);
+        parameters.addParameterListener(parameterID, listener.get());
+        parameterListeners.push_back(std::move(listener));
     }
 
     paramAzimuth.store(PluginParameters::defaultAzimParam);
     paramElevation.store(PluginParameters::defaultElevParam);
     paramDistance.store(PluginParameters::defaultDistParam);
+
+    paramX.store(PluginParameters::defaultXParam);
+    paramY.store(PluginParameters::defaultYParam);
+    paramZ.store(PluginParameters::defaultZParam);
 
     hrirLoader.newHRIRAvailable = [this] () {
         hrirAvailable.store(true);
@@ -222,6 +228,8 @@ juce::AudioProcessorValueTreeState &AudioPluginAudioProcessor::getValueTreeState
 }
 
 void AudioPluginAudioProcessor::updateHRIR() {
+    // DBG("updateHRIR() wurde aufgerufen.");
+
     hrirAvailable.store(false);
     convolution.loadImpulseResponse(std::move(hrirLoader.getHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
 
