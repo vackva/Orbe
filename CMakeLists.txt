@@ -19,6 +19,8 @@ set(BUILD_TESTS OFF CACHE BOOL "Disable building tests" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared instead of static libraries." FORCE)
 add_subdirectory(modules/customlibmysofa SYSTEM)
 
+add_subdirectory(opengldemo)
+
 if(UNIX AND NOT APPLE)
     set_target_properties(mysofa-static PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
@@ -78,6 +80,10 @@ target_link_libraries(${TARGET_NAME}
         AudioPluginData
         juce::juce_audio_utils
         juce::juce_dsp
+        juce::juce_opengl
+        juce::juce_graphics
+        juce::juce_gui_basics
+        juce::juce_gui_extra
         mysofa-static 
     PUBLIC
         juce::juce_recommended_config_flags
