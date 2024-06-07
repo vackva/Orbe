@@ -2,11 +2,27 @@
 using namespace ::juce::gl;
 
 //==============================================================================
-class MainContentComponent : public juce::OpenGLAppComponent
+class MainContentComponent : public juce::OpenGLAppComponent,
+                             public juce::Slider::Listener
 {
 public:
     MainContentComponent()
     {
+        addAndMakeVisible(rotationXSlider);
+        rotationXSlider.setRange(-10.0, 10.0, 0.01);
+        rotationXSlider.addListener(this);
+        rotationXSlider.setValue(0.0);
+
+        addAndMakeVisible(rotationYSlider);
+        rotationYSlider.setRange(-10.0, 10.0, 0.01);
+        rotationYSlider.addListener(this);
+        rotationYSlider.setValue(0.0);
+
+        addAndMakeVisible(rotationZSlider);
+        rotationZSlider.setRange(-10.0, 10.0, 0.01);
+        rotationZSlider.addListener(this);
+        rotationZSlider.setValue(0.0);
+
         setSize(800, 600);
     }
 
@@ -59,6 +75,9 @@ public:
         if (uniforms->iTime.get() != nullptr)
             uniforms->iTime->set((GLfloat)juce::Time::getMillisecondCounterHiRes() * 0.001f);
 
+        if (uniforms->iPosition.get() != nullptr)
+            uniforms->iPosition->set((GLfloat)rotationXSlider.getValue(), (GLfloat)rotationYSlider.getValue(), (GLfloat)rotationZSlider.getValue());
+
         openGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
         openGLContext.extensions.glEnableVertexAttribArray(positionAttribute);
         openGLContext.extensions.glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
@@ -71,12 +90,23 @@ public:
 
     void paint(juce::Graphics& g) override
     {
-
+        // No painting necessary as OpenGL handles rendering
     }
 
     void resized() override
     {
-        // This is called when the MainContentComponent is resized.
+        auto area = getLocalBounds();
+        rotationXSlider.setBounds(area.removeFromTop(20));
+        rotationYSlider.setBounds(area.removeFromTop(20));
+        rotationZSlider.setBounds(area.removeFromTop(20));
+    }
+
+    void sliderValueChanged(juce::Slider* slider) override
+    {
+        if (slider == &rotationXSlider || slider == &rotationYSlider || slider == &rotationZSlider)
+        {
+            repaint();
+        }
     }
 
     void createShaders()
@@ -97,6 +127,7 @@ public:
 
             uniform vec3 iResolution;
             uniform float iTime;
+            uniform vec3 iPosition;
             varying vec2 fragCoord;
 
             float noise(vec3 p) {
@@ -142,18 +173,6 @@ public:
                 return length(p);
             }
 
-            vec3 rotated_x(float a, vec3 p) {
-                float ca = cos(a);
-                float sa = sin(a);
-                return vec3(p.x, ca * p.y + sa * p.z, -sa * p.y + ca * p.z);
-            }
-
-            vec3 rotated_y(float a, vec3 p) {
-                float ca = cos(a);
-                float sa = sin(a);
-                return vec3(ca * p.x - sa * p.z, p.y, sa * p.x + ca * p.z);
-            }
-
             vec3 sphere_0_position() {
                 return vec3(0.);
             }
@@ -181,7 +200,7 @@ public:
             }
 
             vec3 sphere_1_position() {
-                return rotated_y(iTime, vec3(3, 0., 0.));
+                return iPosition;
             }
 
             float sphere_1_radius() {
@@ -249,7 +268,7 @@ public:
             void mainImage(out vec4 rgba, in vec2 coords) {
                 coords = (2. * coords.xy - iResolution.xy) / iResolution.x;
                 vec3 ro = vec3(0., 3., -10.);
-                vec3 rd = rotated_x(-0.2, normalize(vec3(coords.xy, 1.)));
+                vec3 rd = normalize(vec3(coords.xy, 1.));
                 vec4 halo = vec4(0.);
                 for (int i = 0; i < 150; ++i) {
                     float sd = min(scene_distance(ro), 0.25);
@@ -321,10 +340,12 @@ private:
         {
             iResolution.reset(createUniform(shaderProgram, "iResolution"));
             iTime.reset(createUniform(shaderProgram, "iTime"));
+            iPosition.reset(createUniform(shaderProgram, "iPosition"));
         }
 
         std::unique_ptr<juce::OpenGLShaderProgram::Uniform> iResolution;
         std::unique_ptr<juce::OpenGLShaderProgram::Uniform> iTime;
+        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> iPosition;
 
     private:
         static juce::OpenGLShaderProgram::Uniform* createUniform(juce::OpenGLShaderProgram& shaderProgram, const juce::String& uniformName)
@@ -339,6 +360,10 @@ private:
     };
 
     std::unique_ptr<Uniforms> uniforms;
+
+    juce::Slider rotationXSlider;
+    juce::Slider rotationYSlider;
+    juce::Slider rotationZSlider;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainContentComponent)
 };
