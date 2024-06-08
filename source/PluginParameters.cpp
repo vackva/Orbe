@@ -33,6 +33,77 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
                                                                  zRange,
                                                                  defaultZParam));
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>(LFO_START_ID,
+                                                                LFO_START_NAME,
+                                                                defaultLFOStartParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(XLFO_RATE_ID,
+                                                                 XLFO_RATE_NAME,
+                                                                 xLFORateRange,
+                                                                 defaultXLFORateParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(XLFO_DEPTH_ID,
+                                                                 XLFO_DEPTH_NAME,
+                                                                 xLFODepthRange,
+                                                                 defaultXLFODepthParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(XLFO_PHASE_ID,
+                                                                 XLFO_PHASE_NAME,
+                                                                 xLFOPhaseRange,
+                                                                 defaultXLFOPhaseParam));
+                                                            
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(XLFO_OFFSET_ID,
+                                                                 XLFO_OFFSET_NAME,
+                                                                 xLFOOffsetRange,
+                                                                 defaultXLFOOffsetParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(YLFO_RATE_ID,
+                                                                YLFO_RATE_NAME,
+                                                                yLFORateRange,
+                                                                defaultYLFORateParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(YLFO_DEPTH_ID,
+                                                                YLFO_DEPTH_NAME,
+                                                                yLFODepthRange,
+                                                                defaultYLFODepthParam));
+                                                            
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(YLFO_PHASE_ID,
+                                                                YLFO_PHASE_NAME,
+                                                                yLFOPhaseRange,
+                                                                defaultYLFOPhaseParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(YLFO_OFFSET_ID,
+                                                                YLFO_OFFSET_NAME,
+                                                                yLFOOffsetRange,
+                                                                defaultYLFOOffsetParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(ZLFO_RATE_ID,
+                                                                ZLFO_RATE_NAME,
+                                                                zLFORateRange,
+                                                                defaultZLFORateParam)); 
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(ZLFO_DEPTH_ID,
+                                                                ZLFO_DEPTH_NAME,
+                                                                zLFODepthRange,
+                                                                defaultZLFODepthParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(ZLFO_PHASE_ID,
+                                                                ZLFO_PHASE_NAME,
+                                                                zLFOPhaseRange,
+                                                                defaultZLFOPhaseParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(ZLFO_OFFSET_ID,
+                                                                ZLFO_OFFSET_NAME,
+                                                                zLFOOffsetRange,
+                                                                defaultZLFOOffsetParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(PRESETS_ID,
+                                                                  PRESETS_NAME,
+                                                                  juce::StringArray("Custom", "Great Circle", "Eight Figure", "3D Infinity", "Diagonal Circle", "Diagonal Eight", "Sparse Spiral", "Dense Spiral", "3D Horsehoe", "Ping Pong", "Small Circle Front Left", "Small Circle Front Right", "Small Circle Back Left", "Small Circle Back Right"),
+                                                                  0));
+                                                               
+
+    
 
     for (const auto & param : params) {
         parameterList.add(param->getParameterID());
@@ -45,51 +116,52 @@ juce::StringArray PluginParameters::getPluginParameterList() {
     return parameterList;
 }
 
-ParameterListener::ParameterListener(juce::AudioProcessorValueTreeState& state, const juce::String& parameterID)
-    : treeState(state), paramID(parameterID)
+ParameterListener::ParameterListener(juce::AudioProcessorValueTreeState& state)
+    : treeState(state)
 {
-    treeState.addParameterListener(paramID, this);
+
 }
 
 ParameterListener::~ParameterListener()
 {
-    treeState.removeParameterListener(paramID, this);
+
 }
+
 
 void ParameterListener::parameterChanged(const juce::String& parameterID, float newValue)
 {
+
     // instance of the UpdateManager, which is a singleton class that manages the boolean flags for bidirectional parameter updates
     UpdateManager& updateManager = UpdateManager::getInstance();
 
-    if ((parameterID == paramID) && !updateManager.getIsUpdating())
+    if (!updateManager.getIsUpdating())
     {
         updateManager.setIsUpdating(true);
-        if (parameterID == "param_x" || parameterID == "param_y" || parameterID == "param_z")
+        if (parameterID == PluginParameters::X_ID.getParamID() || parameterID == PluginParameters::Y_ID.getParamID() || parameterID == PluginParameters::Z_ID.getParamID())
         {
             // avoid endless recursion
             if (!updateManager.getIsUpdatingCartesian())
             {
                 updateManager.setIsUpdatingSpherical(true);
                 updateSphericalCoordinates();
-                updateManager.setOldRadius(PluginParameters::distRange.convertFrom0to1(treeState.getParameter("param_dist")->getValue()));
+                updateManager.setOldRadius(PluginParameters::distRange.convertFrom0to1(treeState.getParameter(PluginParameters::DIST_ID.getParamID())->getValue()));
                 updateManager.setIsUpdatingSpherical(false);
             }
         }
-        else if (parameterID == "param_dist" || parameterID == "param_elev" || parameterID == "param_azim")
+        else if (parameterID == PluginParameters::DIST_ID.getParamID()|| parameterID == PluginParameters::AZIM_ID.getParamID() || parameterID == PluginParameters::ELEV_ID.getParamID())
         {
             // avoid endless recursion
             if (!updateManager.getIsUpdatingSpherical())
             {
                 updateManager.setIsUpdatingCartesian(true);
-                if (parameterID == "param_dist")
+                if (parameterID == PluginParameters::DIST_ID.getParamID())
                 {
-                    float radius = PluginParameters::distRange.convertFrom0to1(treeState.getParameter("param_dist")->getValue());
+                    float radius = PluginParameters::distRange.convertFrom0to1(treeState.getParameter(PluginParameters::DIST_ID.getParamID())->getValue());
                     boundRadius(radius);
-                    updateManager.setOldRadius(PluginParameters::distRange.convertFrom0to1(treeState.getParameter("param_dist")->getValue()));
+                    updateManager.setOldRadius(PluginParameters::distRange.convertFrom0to1(treeState.getParameter(PluginParameters::DIST_ID.getParamID())->getValue()));
                 }
-                if (parameterID == "param_azim" || parameterID == "param_elev")
+                if (parameterID == PluginParameters::AZIM_ID.getParamID() || parameterID == PluginParameters::ELEV_ID.getParamID())
                 {
-                    // compress the cached radius to the room boundaries, while changing the azimuth or elevation
                     boundRadius(updateManager.getOldRadius());
                 }
                 updateCartesianCoordinates();
@@ -103,8 +175,8 @@ void ParameterListener::parameterChanged(const juce::String& parameterID, float 
 void ParameterListener::boundRadius(float radius) {
     // limit the radius to the boundaries of the quadratic room
     // get the current azimuth and elevation values
-    float azimuthDeg = PluginParameters::azimRange.convertFrom0to1(treeState.getParameter("param_azim")->getValue());
-    float elevationDeg = PluginParameters::elevRange.convertFrom0to1(treeState.getParameter("param_elev")->getValue());
+    float azimuthDeg = PluginParameters::azimRange.convertFrom0to1(treeState.getParameter(PluginParameters::AZIM_ID.getParamID())->getValue());
+    float elevationDeg = PluginParameters::elevRange.convertFrom0to1(treeState.getParameter(PluginParameters::ELEV_ID.getParamID())->getValue());
     float elevationRad = degreesToRadians(elevationDeg);
     float azimuthRad = degreesToRadians(azimuthDeg);
 
@@ -128,14 +200,12 @@ void ParameterListener::boundRadius(float radius) {
     // limit the new radius if it exceeds the room boundaries
     if (radius > maxRadius) {
         float normalizedRadius = PluginParameters::distRange.convertTo0to1(maxRadius);
-        treeState.getParameter("param_dist")->setValueNotifyingHost(normalizedRadius);
+        treeState.getParameter(PluginParameters::DIST_ID.getParamID())->setValueNotifyingHost(normalizedRadius);
     }
 }
 
 void ParameterListener::updateSphericalCoordinates()
 {
-    DBG("ParameterListener::updateSphericalCoordinates() called."); 
-
     float normalizedX = treeState.getParameter("param_x")->getValue();
     float normalizedY = treeState.getParameter("param_y")->getValue();
     float normalizedZ = treeState.getParameter("param_z")->getValue();
@@ -143,8 +213,6 @@ void ParameterListener::updateSphericalCoordinates()
     float x = PluginParameters::xRange.convertFrom0to1(normalizedX);
     float y = PluginParameters::yRange.convertFrom0to1(normalizedY);
     float z = PluginParameters::zRange.convertFrom0to1(normalizedZ);
-
-    DBG("x: " << x << " y: " << y << " z: " << z);
 
     float radius = sqrt(x*x + y*y + z*z);
     float elevation;
@@ -177,9 +245,6 @@ void ParameterListener::updateSphericalCoordinates()
         azimuth = atan2(y, x);
         azimuth = radiansToDegrees(azimuth);
     }
-
-    DBG("Nach Update: r: " << radius << " elev: " << elevation << " azim: " << azimuth);
-
     float normalizedRadius = PluginParameters::distRange.convertTo0to1(radius);
     float normalizedElevation = PluginParameters::elevRange.convertTo0to1(elevation);
     float normalizedAzimuth = PluginParameters::azimRange.convertTo0to1(azimuth);
@@ -191,8 +256,6 @@ void ParameterListener::updateSphericalCoordinates()
 
 void ParameterListener::updateCartesianCoordinates()
 {
-    DBG("ParameterListener::updateCartesianCoordinates() called.");
-
     float normalizedRadius = treeState.getParameter("param_dist")->getValue();
     float normalizedAzimuthDeg = treeState.getParameter("param_azim")->getValue();
     float normalizedElevationDeg = treeState.getParameter("param_elev")->getValue();
@@ -204,8 +267,6 @@ void ParameterListener::updateCartesianCoordinates()
     float colatitudeRad = juce::MathConstants<float>::halfPi - degreesToRadians(elevationDeg);
     float azimuthRad = degreesToRadians(azimuthDeg);
 
-    // DBG("r: " << radius << " elev: " << azimuthDeg << " azim: " << elevationDeg);
-
     float x = radius * sin(colatitudeRad) * cos(azimuthRad);
     float y = radius * sin(colatitudeRad) * sin(azimuthRad);
     float z = radius * cos(colatitudeRad);
@@ -214,8 +275,6 @@ void ParameterListener::updateCartesianCoordinates()
     x = jlimit(-10.0f, 10.0f, x);
     y = jlimit(-10.0f, 10.0f, y);
     z = jlimit(-10.0f, 10.0f, z);
-
-    // DBG("Nach Update: x: " << x << " y: " << y << " z: " << z);
 
     float normalizedX = PluginParameters::xRange.convertTo0to1(x);
     float normalizedY = PluginParameters::yRange.convertTo0to1(y);
@@ -226,5 +285,3 @@ void ParameterListener::updateCartesianCoordinates()
     treeState.getParameter("param_z")->setValueNotifyingHost(normalizedZ);
 }
 
-
-// Path: source/PluginProcessor.cpp 

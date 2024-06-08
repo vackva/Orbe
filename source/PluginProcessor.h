@@ -49,7 +49,7 @@ public:
     float getAtomicParameterValue(const juce::String& parameterID);
     juce::AudioProcessorValueTreeState& getValueTreeState();
 
-    std::vector<std::unique_ptr<ParameterListener>> parameterListeners;
+    ParameterListener parameterListener;
 
 private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
@@ -57,7 +57,11 @@ private:
     void requestNewHRIR() {
         bool success = hrirLoader.submitJob(paramAzimuth.load(), paramElevation.load());
         hrirRequestDenied = !success;
-    }
+        }
+    void applyPreset(int presetOption);
+    void processLFOs();
+    void refreshLFOs();
+
 private:
     juce::AudioProcessorValueTreeState parameters;
 
@@ -72,6 +76,9 @@ private:
     std::atomic<bool> hrirAvailable { false };
     bool convolutionReady = false;
 
+    std::unique_ptr<juce::dsp::Oscillator<float>> xLFO;
+    std::unique_ptr<juce::dsp::Oscillator<float>> yLFO;
+    std::unique_ptr<juce::dsp::Oscillator<float>> zLFO;
 
     std::atomic<float> paramAzimuth { 0.0f };
     std::atomic<float> paramElevation { 0.0f };
@@ -79,6 +86,21 @@ private:
     std::atomic<float> paramX { 0.0f };
     std::atomic<float> paramY { 0.0f };
     std::atomic<float> paramZ { 0.0f };
+    std::atomic<bool> paramLFOStart { false };
+    std::atomic<float> paramXLFORate { 0.0f };
+    std::atomic<float> paramXLFODepth { 0.0f };
+    std::atomic<float> paramXLFOPhase { 0.0f };
+    std::atomic<float> paramXLFOOffset { 0.0f };
+    std::atomic<float> paramYLFORate { 0.0f };
+    std::atomic<float> paramYLFODepth { 0.0f };
+    std::atomic<float> paramYLFOPhase { 0.0f };
+    std::atomic<float> paramYLFOOffset { 0.0f };
+    std::atomic<float> paramZLFORate { 0.0f };
+    std::atomic<float> paramZLFODepth { 0.0f };
+    std::atomic<float> paramZLFOPhase { 0.0f };
+    std::atomic<float> paramZLFOOffset { 0.0f };
+
+
     std::atomic<bool> hrirChanged { false };
 
     //==============================================================================
