@@ -30,6 +30,10 @@ target_sources(OpenGLAppTutorial
         Source/Main.cpp
         Source/OpenGLAppTutorial.h)
 
+juce_add_binary_data(BinaryData SOURCES
+        ../assets/images/background.png
+)
+
 # Define preprocessor definitions
 target_compile_definitions(OpenGLAppTutorial
         PRIVATE
@@ -41,6 +45,7 @@ target_compile_definitions(OpenGLAppTutorial
 # Link the required JUCE modules
 target_link_libraries(OpenGLAppTutorial
         PRIVATE
+        BinaryData
         juce::juce_core
         juce::juce_data_structures
         juce::juce_events
