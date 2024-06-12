@@ -113,6 +113,8 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     convA.prepare(processSpec);
     convB.prepare(processSpec);
     
+    crossoverFactor.reset( samplesPerBlock );
+    
     int numDelayChannels = 1;
     dsp::ProcessSpec delaySpec{sampleRate,
                             (juce::uint32) samplesPerBlock,
@@ -205,14 +207,15 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 convA.process( contextCopy );
             }
             
-            // TODO Malte Cross-Over
-            // mix buffers convolved with current and previous hrir
+            // cross over mix buffers convolved with current and previous hrir
+            crossoverFactor.setTargetValue( 1.0f );
+            buffer.applyGain( 1  - crossoverFactor.getNextValue() );
+            bufferCopy.applyGain( crossoverFactor.getNextValue()  );
+            
             for (int channel = 0; channel < buffer.getNumChannels(); channel++)
             {
                 buffer.addFrom(channel, 0, bufferCopy, channel, 0, buffer.getNumSamples());
             }
-            
-            buffer.applyGain(0.5); // to compensate for mixing
             
             hrirChanged = false;
             
