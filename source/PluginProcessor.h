@@ -82,7 +82,7 @@ private:
     dsp::Convolution convA;
     dsp::Convolution convB;
     
-    dsp::DelayLine<float> delayLineLeft;
+    dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineLeft;
     dsp::DelayLine<float> delayLineRight;
 
     //==============================================================================

@@ -120,6 +120,10 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     delayLineLeft.prepare(delaySpec);
     delayLineRight.prepare(delaySpec);
     
+    float maxDelayInSamples = sampleRate * 2;
+    delayLineLeft.setMaximumDelayInSamples( maxDelayInSamples );
+    delayLineRight.setMaximumDelayInSamples( maxDelayInSamples );
+    
     bufferCopy.setSize(processSpec.numChannels, processSpec.maximumBlockSize);
 
     convolutionReady = false;
@@ -210,8 +214,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     }
 
     // Malte TODO get and apply delay
-    float leftDelay = 0.001; //hrirLoader.currentLeftDelay; // * getSampleRate(); -> CONVERSION TO SAMPLES NECESSARY?
-    float rightDelay= 0.8; //hrirLoader.currentRightDelay; // * getSampleRate();
+    float leftDelay = 12; //hrirLoader.currentLeftDelay; // * getSampleRate(); -> CONVERSION TO SAMPLES NECESSARY?
+    float rightDelay= 50000; //hrirLoader.currentRightDelay; // * getSampleRate();
     
     delayLineLeft.setDelay(leftDelay);
     delayLineRight.setDelay(rightDelay);
