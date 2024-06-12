@@ -1,16 +1,17 @@
 #include "PannerVisualisation.h"
 
-PannerVisualisation::PannerVisualisation() {
-
+PannerVisualisation::PannerVisualisation() : isInitialized(false) {
+    smallCircleRadius = 10.0f;
 }
 
 void PannerVisualisation::paint(juce::Graphics &g) {
-    const auto circleBounds = getLocalBounds().reduced(getWidth() / reductionDivide);
-
-    if (!circleBounds.contains(smallCirclePosition.toInt())) {
-        const auto bounds = getLocalBounds();
-        smallCirclePosition = bounds.getCentre().toFloat();
+    // Initializing the smallCirclePosition here, because the bounds are not available in the constructor
+    if (!isInitialized) {
+        smallCirclePosition = getLocalBounds().getCentre().toFloat();
+        isInitialized = true;
+        setVisualPosition(0.0f, 0.0f, 0.0f);
     }
+    const auto circleBounds = getLocalBounds().reduced(getWidth() / reductionDivide);
 
     drawCircles(g, circleBounds);
     drawLines(g, circleBounds);
@@ -57,7 +58,7 @@ void PannerVisualisation::drawLines(juce::Graphics &g, juce::Rectangle<int> circ
 }
 
 void PannerVisualisation::drawSmallCircle(juce::Graphics &g) {
-    const float smallCircleRadius = 10.0f; // Radius of the small circle
+    // const float smallCircleRadius = 10.0f; // Radius of the small circle
     g.setColour(juce::Colours::lightgrey); // Small circle color
     g.fillEllipse(smallCirclePosition.x - smallCircleRadius, smallCirclePosition.y - smallCircleRadius, smallCircleRadius * 2, smallCircleRadius * 2);
 }
@@ -70,29 +71,27 @@ void PannerVisualisation::mouseDown(const juce::MouseEvent &event) {
 }
 
 void PannerVisualisation::mouseDrag(const juce::MouseEvent &event) {
-    if (dragging) {
-        auto bounds = getLocalBounds().reduced(getWidth() / reductionDivide).toFloat();
-        juce::Point<float> newPos = event.position.toFloat();
-        auto center = bounds.getCentre();
-        auto vectorFromCenter = newPos - center;
-        auto distanceToCenter = vectorFromCenter.getDistanceFrom({0, 0});
+    auto bounds = getLocalBounds().reduced(getWidth() / reductionDivide).toFloat();
+    auto center = bounds.getCentre();
+    auto radius = static_cast<float>(bounds.getWidth() / 2.0);
+    juce::Point<float> newPos = event.position.toFloat();
+    float distanceX = std::abs(newPos.x - center.x);
+    float distanceY = std::abs(newPos.y - center.y);
 
-        auto radius = static_cast<float>(bounds.getWidth() / 2.0);
-        if (distanceToCenter > radius) {
-            float normX = vectorFromCenter.x / distanceToCenter;
-            float normY = vectorFromCenter.y / distanceToCenter;
-            newPos.x = center.x + normX * radius;
-            newPos.y = center.y + normY * radius;
-        }
-        smallCirclePosition = newPos;
-
-        auto newAzimuth =  calculateAzimuth();
-        auto newElevation =  calculateElevation();
-
-        listeners.call([newAzimuth, newElevation](Listener& l) { l.pannerChanged(newAzimuth, newElevation); });
-
-        repaint();
+    if (distanceX > radius) {
+        newPos.x = (newPos.x > center.x) ? center.x + radius : center.x - radius;
     }
+    if (distanceY > radius) {
+        newPos.y = (newPos.y > center.y) ? center.y + radius : center.y - radius;
+    }
+
+    smallCirclePosition = newPos;
+    float newX = - (newPos.y - center.y) / radius * 10.0f;
+    float newY = - (newPos.x - center.x) / radius * 10.0f;
+
+    listeners.call([newX, newY](Listener& l) { l.pannerChanged(newX, newY); });
+
+    repaint();
 }
 
 void PannerVisualisation::mouseUp(const juce::MouseEvent &event) {
@@ -105,68 +104,29 @@ bool PannerVisualisation::isInsideSmallCircle(const juce::Point<float> &point) {
     return smallCirclePosition.getDistanceFrom(point) <= 50.0;
 }
 
-float PannerVisualisation::calculateAzimuth() const {
-    auto bounds = getLocalBounds().reduced(getWidth() / reductionDivide);
-    auto center = bounds.getCentre().toFloat();
-    float angle = std::atan2(smallCirclePosition.y - center.y, smallCirclePosition.x - center.x) * (180 / juce::MathConstants<float>::pi);
-
-    angle -= 270;
-
-    if (angle > 180) {
-        angle -= 360;
-    } else if (angle < -180) {
-        angle += 360;
-    }
-
-    return angle;
-}
-
-float PannerVisualisation::calculateElevation() const {
-    auto bounds = getLocalBounds().reduced(getWidth() / reductionDivide);
-    auto center = bounds.getCentre().toFloat();
-    float radius = static_cast<float>(bounds.getWidth() / 2.0);
-
-    float distance = smallCirclePosition.getDistanceFrom(center);
-    float elevation = 90 - (distance / radius) * 90;
-
-    return elevation;
-}
-
-
-void PannerVisualisation::setAzimuthAndElevation(float azimuth, float elevation) {
-    if (mouseIsActive || (azimuth == lastAzimuth && elevation == lastElevation)) {
+void PannerVisualisation::setVisualPosition(float x, float y, float z) {
+    if (approximatelyEqual(x, lastX) && approximatelyEqual(y, lastY) && approximatelyEqual(z, lastZ)) {
         return;
     }
-
-    lastAzimuth = azimuth;
-    lastElevation = elevation;
-
-    // TODO Bug at 180 / -180
-    azimuth = std::clamp(azimuth, -179.0f, 179.0f);
-    elevation = std::clamp(elevation, 0.0f, 90.0f);
-
-    if (azimuth < 0) {
-        azimuth += 360;
-    }
-
-    float azimuthRadians = (90.0f - azimuth) * (juce::MathConstants<float>::pi / 180.0f);
-
-    if (azimuthRadians < 0) {
-        azimuthRadians += 2 * juce::MathConstants<float>::pi;
-    }
+    lastX = x;
+    lastY = y;
+    lastZ = z;
 
     auto bounds = getLocalBounds().reduced(getWidth() / reductionDivide);
     auto center = bounds.getCentre().toFloat();
     float outerRadius = static_cast<float>(bounds.getWidth() / 2.0);
 
-    float radius = outerRadius * (1.0f - (elevation / 90.0f));
+    float zScale = ((z + 10) / 20.0f) * 1.5f + 0.5f;
+    smallCircleRadius = 10.0f * zScale;
 
-    float newX = center.x + std::cos(azimuthRadians) * radius;
-    float newY = center.y - std::sin(azimuthRadians) * radius;
+    float newX = center.x - (y / 10.0f) * outerRadius;
+    float newY = center.y - (x / 10.0f) * outerRadius;
+
     smallCirclePosition.setXY(newX, newY);
 
     repaint();
 }
+
 
 void PannerVisualisation::addListener(PannerVisualisation::Listener *listenerToAdd) {
     listeners.add(listenerToAdd);
