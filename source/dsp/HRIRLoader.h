@@ -20,7 +20,7 @@ public:
     void hrirAccessed ();
 
     juce::AudioBuffer<float>& getCurrentHRIR();
-    juce::AudioBuffer<float>& getPreviousHRIR();
+    //juce::AudioBuffer<float>& getPreviousHRIR();
 
     // TODO replace with Listener
     std::function<void()> newHRIRAvailable;
@@ -37,8 +37,8 @@ private:
     HRIRJob requestedHRIR;
     
     juce::AudioBuffer<float> currentHrirBuffer;
-    juce::AudioBuffer<float> previousHrirBuffer;
-    juce::AudioBuffer<float> tempHrirBuffer;
+    //juce::AudioBuffer<float> previousHrirBuffer;
+    //juce::AudioBuffer<float> tempHrirBuffer;
 
 };
 

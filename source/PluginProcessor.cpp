@@ -106,8 +106,10 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 
     hrirLoader.prepare(processSpec);
     
-    currentConvolution.prepare(processSpec);
-    previousConvolution.prepare(processSpec);
+    //currentConvolution.prepare(processSpec);
+    //previousConvolution.prepare(processSpec);
+    convA.prepare(processSpec);
+    convB.prepare(processSpec);
     
     bufferCopy.setSize(processSpec.numChannels, processSpec.maximumBlockSize);
 
@@ -154,7 +156,18 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     if (convolutionReady) 
     {
-        currentConvolution.process(context);
+        //currentConvolution.process(context);
+        
+        if ( activConvIsA )
+        {
+            convA.process( context );
+        }
+        else
+        {
+            convB.process( context );
+        }
+            
+            
         
         if (hrirChanged)
         {
@@ -164,7 +177,14 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             
             juce::dsp::ProcessContextReplacing<float> contextCopy(blockCopy);
             
-            previousConvolution.process(contextCopy);
+            if ( activConvIsA )
+            {
+                convB.process( contextCopy );
+            }
+            else
+            {
+                convA.process( contextCopy );
+            }
             
             // mix buffers convolved with current and previous hrir
             for (int channel = 0; channel < buffer.getNumChannels(); channel++)
@@ -246,8 +266,17 @@ juce::AudioProcessorValueTreeState &AudioPluginAudioProcessor::getValueTreeState
 void AudioPluginAudioProcessor::updateHRIR() {
     hrirAvailable.store(false);
     
+    if (activConvIsA)
+    {
+        convB.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    }
+    else
+    {
+        convA.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    }
+    /*
     currentConvolution.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-    previousConvolution.loadImpulseResponse(std::move(hrirLoader.getPreviousHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    previousConvolution.loadImpulseResponse(std::move(hrirLoader.getPreviousHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);*/
 
     hrirLoader.hrirAccessed();
     convolutionReady = true;

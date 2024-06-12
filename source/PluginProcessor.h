@@ -59,8 +59,8 @@ private:
 private:
     juce::AudioProcessorValueTreeState parameters;
 
-    dsp::Convolution currentConvolution;
-    dsp::Convolution previousConvolution;
+    //dsp::Convolution currentConvolution;
+    //dsp::Convolution previousConvolution;
     
     juce::AudioBuffer<float> bufferCopy;
 
@@ -75,6 +75,12 @@ private:
     std::atomic<float> paramElevation { 0.0f };
     std::atomic<float> paramDistance { 0.0f };
     //std::atomic<bool> hrirChanged { false }; // not used?? -> if needed other member with same name has to be changed
+    
+    //enum activConv { activConvIsA, activConvIsB};
+    bool activConvIsA = true;
+    
+    dsp::Convolution convA;
+    dsp::Convolution convB;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
