@@ -26,7 +26,7 @@ void HRIRLoader::run() {
             
             // get current hrir
             currentHrirBuffer.setSize(currentSpec.numChannels, sofaReader.get_ir_length());
-            sofaReader.get_hrirs(currentHrirBuffer, requestedHRIR.azm, requestedHRIR.elev, 1);
+            sofaReader.get_hrirs(currentHrirBuffer, requestedHRIR.azm, requestedHRIR.elev, 1, currentLeftDelay, currentRightDelay);
             
             // copy current hrir to temp hrir
             //tempHrirBuffer.makeCopyOf(currentHrirBuffer);

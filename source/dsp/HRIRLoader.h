@@ -37,6 +37,8 @@ private:
     HRIRJob requestedHRIR;
     
     juce::AudioBuffer<float> currentHrirBuffer;
+    float currentLeftDelay;
+    float currentRightDelay;
     //juce::AudioBuffer<float> previousHrirBuffer;
     //juce::AudioBuffer<float> tempHrirBuffer;
 

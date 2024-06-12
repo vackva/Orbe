@@ -16,7 +16,7 @@ public:
     void prepare(double samplerate);
 
     int get_ir_length();
-    void get_hrirs(juce::AudioBuffer<float>& buffer, float azim, float elev, float dist);
+    void get_hrirs(juce::AudioBuffer<float>& buffer, float azim, float elev, float dist, float &currentLeftDelay, float &currentRightDelay);
 
 private:
     int ir_length;

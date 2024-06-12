@@ -100,6 +100,7 @@ void AudioPluginAudioProcessor::changeProgramName (int index, const juce::String
 //==============================================================================
 void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+
     dsp::ProcessSpec processSpec {sampleRate,
                                   (juce::uint32) samplesPerBlock,
                                   (juce::uint32) getTotalNumInputChannels() };
@@ -110,6 +111,14 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     //previousConvolution.prepare(processSpec);
     convA.prepare(processSpec);
     convB.prepare(processSpec);
+    
+    int numDelayChannels = 1;
+    dsp::ProcessSpec delaySpec{sampleRate,
+                            (juce::uint32) samplesPerBlock,
+                            (juce::uint32) numDelayChannels };
+    
+    delayLineLeft.prepare(delaySpec);
+    delayLineRight.prepare(delaySpec);
     
     bufferCopy.setSize(processSpec.numChannels, processSpec.maximumBlockSize);
 
@@ -166,9 +175,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         {
             convB.process( context );
         }
-            
-            
-        
+       
         if (hrirChanged)
         {
             // copy avoiding allocation -> check if really no memory gets allocated
@@ -195,14 +202,29 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             buffer.applyGain(0.5); // to compensate for mixing
             
             hrirChanged = false;
+            
+            // update active convolution
+            activConvIsA = (activConvIsA) ? false : true;
         }
         
     }
 
     // Malte TODO get and apply delay
+    float leftDelay = 0.001; //hrirLoader.currentLeftDelay; // * getSampleRate(); -> CONVERSION TO SAMPLES NECESSARY?
+    float rightDelay= 0.8; //hrirLoader.currentRightDelay; // * getSampleRate();
     
+    delayLineLeft.setDelay(leftDelay);
+    delayLineRight.setDelay(rightDelay);
     
-
+    juce::dsp::AudioBlock<float> blockLeft = block.getSingleChannelBlock(0);
+    juce::dsp::AudioBlock<float> blockRight = block.getSingleChannelBlock(1);
+    
+    juce::dsp::ProcessContextReplacing<float> contextLeft( blockLeft );
+    juce::dsp::ProcessContextReplacing<float> contextRight ( blockRight );
+    
+    delayLineLeft.process( contextLeft );
+    delayLineRight.process( contextRight );
+    
     buffer.applyGain(0.5);
 }
 

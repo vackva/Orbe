@@ -26,11 +26,11 @@ int SofaReader::get_ir_length() {
     return ir_length;
 }
 
-void SofaReader::get_hrirs(AudioBuffer<float> &buffer, float azim, float elev, float dist) {
+void SofaReader::get_hrirs(AudioBuffer<float> &buffer, float azim, float elev, float dist, float &leftDelay, float &rightDelay) {
     auto leftIR = buffer.getWritePointer(0);
     auto rightIR = buffer.getWritePointer(1);
-    float leftDelay;
-    float rightDelay;
+    //float leftDelay;
+    //float rightDelay;
     // convert coordinates to xyz
     coordinate_buffer[0] = azim;
     coordinate_buffer[1] = elev;

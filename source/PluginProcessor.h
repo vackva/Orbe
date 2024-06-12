@@ -81,6 +81,9 @@ private:
     
     dsp::Convolution convA;
     dsp::Convolution convB;
+    
+    dsp::DelayLine<float> delayLineLeft;
+    dsp::DelayLine<float> delayLineRight;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
