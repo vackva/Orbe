@@ -79,11 +79,14 @@ private:
     //enum activConv { activConvIsA, activConvIsB};
     bool activConvIsA = true;
     
-    dsp::Convolution convA;
-    dsp::Convolution convB;
+    juce::dsp::Convolution convA;
+    juce::dsp::Convolution convB;
     
-    dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineLeft;
-    dsp::DelayLine<float> delayLineRight;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineLeft;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineRight;
+    
+    juce::SmoothedValue<float> smoothDelayLeft { 0.0f };
+    juce::SmoothedValue<float> smoothDelayRight { 0.0f };
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

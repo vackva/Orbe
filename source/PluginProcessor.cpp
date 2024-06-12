@@ -109,6 +109,7 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     
     //currentConvolution.prepare(processSpec);
     //previousConvolution.prepare(processSpec);
+    
     convA.prepare(processSpec);
     convB.prepare(processSpec);
     
@@ -119,6 +120,9 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     
     delayLineLeft.prepare(delaySpec);
     delayLineRight.prepare(delaySpec);
+    
+    smoothDelayLeft.reset( samplesPerBlock );
+    smoothDelayRight.reset( samplesPerBlock );
     
     float maxDelayInSamples = sampleRate * 2;
     delayLineLeft.setMaximumDelayInSamples( maxDelayInSamples );
@@ -153,6 +157,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 {
     juce::ignoreUnused (midiMessages);
     juce::ScopedNoDenormals noDenormals;
+    
+    // UPDATE HRIR
 
     if (hrirAvailable.load()) {
         updateHRIR();
@@ -162,6 +168,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         hrirRequestDenied = false;
         requestNewHRIR();
     }
+    
+    // APPLY CONVOLUTION
     
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
@@ -197,6 +205,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 convA.process( contextCopy );
             }
             
+            // TODO Malte Cross-Over
             // mix buffers convolved with current and previous hrir
             for (int channel = 0; channel < buffer.getNumChannels(); channel++)
             {
@@ -212,13 +221,16 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
         
     }
-
-    // Malte TODO get and apply delay
+    
+    // APPLY DELAY
     float leftDelay = 12; //hrirLoader.currentLeftDelay; // * getSampleRate(); -> CONVERSION TO SAMPLES NECESSARY?
     float rightDelay= 50000; //hrirLoader.currentRightDelay; // * getSampleRate();
     
-    delayLineLeft.setDelay(leftDelay);
-    delayLineRight.setDelay(rightDelay);
+    smoothDelayLeft.setTargetValue( leftDelay );
+    smoothDelayRight.setTargetValue( rightDelay );
+    
+    delayLineLeft.setDelay( smoothDelayLeft.getNextValue() );
+    delayLineRight.setDelay( smoothDelayRight.getNextValue() );
     
     juce::dsp::AudioBlock<float> blockLeft = block.getSingleChannelBlock(0);
     juce::dsp::AudioBlock<float> blockRight = block.getSingleChannelBlock(1);
