@@ -206,8 +206,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     if (convolutionReady) {
         convolution.process(context);
     }
-    float distanceGain =  1 / paramDistance.load();
-    buffer.applyGain(0.5);
+
+    float distanceGain =  0.2 / (jmax(0.0f, paramDistance.load()) + 1);
     buffer.applyGainRamp(0, buffer.getNumSamples(), lastDistanceGain, distanceGain);
     lastDistanceGain = distanceGain;
 }
