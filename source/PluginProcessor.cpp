@@ -209,7 +209,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             
             // cross over mix buffers convolved with current and previous hrir
             crossoverFactor.setTargetValue( 1.0f );
-            buffer.applyGain( 1  - crossoverFactor.getNextValue() );
+            buffer.applyGain( (1  - crossoverFactor.getNextValue()) );
             bufferCopy.applyGain( crossoverFactor.getNextValue()  );
             
             for (int channel = 0; channel < buffer.getNumChannels(); channel++)
@@ -227,7 +227,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     
     // APPLY DELAY
     float leftDelay = 12; //hrirLoader.currentLeftDelay; // * getSampleRate(); -> CONVERSION TO SAMPLES NECESSARY?
-    float rightDelay= 50000; //hrirLoader.currentRightDelay; // * getSampleRate();
+    float rightDelay= 12; //hrirLoader.currentRightDelay; // * getSampleRate();
     
     smoothDelayLeft.setTargetValue( leftDelay );
     smoothDelayRight.setTargetValue( rightDelay );

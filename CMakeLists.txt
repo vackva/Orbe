@@ -58,7 +58,7 @@ target_sources(${TARGET_NAME}
         source/ui/BackgroundComponent.cpp
 )
 
-set(SOFA_TEST_FILE "${CMAKE_CURRENT_LIST_DIR}/assets/pp2_HRIRs_measured.sofa")
+set(SOFA_TEST_FILE "${CMAKE_CURRENT_LIST_DIR}/assets/pp2_HRIRs_interpolated_mca.sofa")
 
 target_compile_definitions(${TARGET_NAME}
     PUBLIC
@@ -70,7 +70,7 @@ target_compile_definitions(${TARGET_NAME}
 )
 
 juce_add_binary_data(AudioPluginData SOURCES
-    assets/pp2_HRIRs_measured.sofa
+    assets/pp2_HRIRs_interpolated_mca.sofa
 )
 
 target_link_libraries(${TARGET_NAME}
