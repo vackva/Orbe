@@ -11,15 +11,41 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ),
-       parameters (*this, nullptr, juce::Identifier (ProjectInfo::projectName), PluginParameters::createParameterLayout())
+       parameters (*this, nullptr, juce::Identifier (ProjectInfo::projectName), PluginParameters::createParameterLayout()),
+       parameterListener(parameters)
+
 {
     for (auto & parameterID : PluginParameters::getPluginParameterList()) {
         parameters.addParameterListener(parameterID, this);
     }
 
+
     paramAzimuth.store(PluginParameters::defaultAzimParam);
     paramElevation.store(PluginParameters::defaultElevParam);
     paramDistance.store(PluginParameters::defaultDistParam);
+
+    paramX.store(PluginParameters::defaultXParam);
+    paramY.store(PluginParameters::defaultYParam);
+    paramZ.store(PluginParameters::defaultZParam);
+
+    paramLFOStart.store(PluginParameters::defaultLFOStartParam);
+    paramXLFORate.store(PluginParameters::defaultXLFORateParam);
+    paramXLFODepth.store(PluginParameters::defaultXLFODepthParam);
+    paramXLFOPhase.store(PluginParameters::defaultXLFOPhaseParam);
+    paramXLFOOffset.store(PluginParameters::defaultXLFOOffsetParam);
+    paramYLFORate.store(PluginParameters::defaultYLFORateParam);
+    paramYLFODepth.store(PluginParameters::defaultYLFODepthParam);
+    paramYLFOPhase.store(PluginParameters::defaultYLFOPhaseParam);
+    paramYLFOOffset.store(PluginParameters::defaultYLFOOffsetParam);
+    paramZLFORate.store(PluginParameters::defaultZLFORateParam);
+    paramZLFODepth.store(PluginParameters::defaultZLFODepthParam);
+    paramZLFOPhase.store(PluginParameters::defaultZLFOPhaseParam);
+    paramZLFOOffset.store(PluginParameters::defaultZLFOOffsetParam);
+
+
+    xLFO = std::make_unique<juce::dsp::Oscillator<float>>();
+    yLFO = std::make_unique<juce::dsp::Oscillator<float>>();
+    zLFO = std::make_unique<juce::dsp::Oscillator<float>>();
 
     hrirLoader.newHRIRAvailable = [this] () {
         hrirAvailable.store(true);
@@ -135,10 +161,24 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     convolutionReady = false;
 
     requestNewHRIR();
+
+    xLFO->prepare(juce::dsp::ProcessSpec({ getSampleRate() / getBlockSize(), (juce::uint32)getBlockSize(), 1 }));
+    xLFO->setFrequency(0.f);
+    xLFO->initialise([](float x) { return x;}, 128);
+    yLFO->prepare(juce::dsp::ProcessSpec({ getSampleRate() / getBlockSize(), (juce::uint32)getBlockSize(), 1 }));
+    yLFO->setFrequency(0.f);
+    yLFO->initialise([](float x) { return x;}, 128);
+    zLFO->prepare(juce::dsp::ProcessSpec({ getSampleRate() / getBlockSize(), (juce::uint32)getBlockSize(), 1 }));
+    zLFO->setFrequency(0.f);
+    zLFO->initialise([](float x) { return x;}, 128);
+
 }
 
 void AudioPluginAudioProcessor::releaseResources()
 {
+    xLFO->reset();
+    yLFO->reset();
+    zLFO->reset();
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
@@ -160,6 +200,13 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::ignoreUnused (midiMessages);
     juce::ScopedNoDenormals noDenormals;
     
+
+    if (*parameters.getRawParameterValue("param_lfo_start") > 0.5f)
+    {
+        processLFOs();
+    }
+
+
     // UPDATE HRIR
 
     if (hrirAvailable.load()) {
@@ -204,6 +251,10 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
     
     buffer.applyGain(0.5);
+    
+    float distanceGain =  0.2 / (jmax(0.0f, paramDistance.load()) + 1);
+    buffer.applyGainRamp(0, buffer.getNumSamples(), lastDistanceGain, distanceGain);
+    lastDistanceGain = distanceGain;
 }
 
 //==============================================================================
@@ -245,7 +296,22 @@ void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, floa
     } else if (parameterID == PluginParameters::DIST_ID.getParamID()) {
         paramDistance.store(newValue);
     }
+    if (parameterID == PluginParameters::PRESETS_ID.getParamID()) {
+        int selectedOption = static_cast<int>(newValue);
+        applyPreset(selectedOption);
+    }
+    // Reset LFOs if rate is changed to realign phase relationship
+    if (parameterID == PluginParameters::XLFO_RATE_ID.getParamID() ||
+        parameterID == PluginParameters::YLFO_RATE_ID.getParamID() ||
+        parameterID == PluginParameters::ZLFO_RATE_ID.getParamID()) {
+        refreshLFOs();
+    }
+    parameterListener.parameterChanged(parameterID, newValue);
 }
+
+
+
+
 
 float AudioPluginAudioProcessor::getAtomicParameterValue(const String &parameterID) {
     if (parameterID == PluginParameters::AZIM_ID.getParamID()) {
@@ -254,9 +320,14 @@ float AudioPluginAudioProcessor::getAtomicParameterValue(const String &parameter
     else if (parameterID == PluginParameters::ELEV_ID.getParamID()) {
         return paramElevation.load();
     }
+    else if (parameterID == PluginParameters::DIST_ID.getParamID()) {
+        return paramDistance.load();
+    }
     else {
         return 0.0f;
     }
+
+
 }
 
 juce::AudioProcessorValueTreeState &AudioPluginAudioProcessor::getValueTreeState() {
@@ -264,6 +335,8 @@ juce::AudioProcessorValueTreeState &AudioPluginAudioProcessor::getValueTreeState
 }
 
 void AudioPluginAudioProcessor::updateHRIR() {
+    // DBG("updateHRIR() wurde aufgerufen.");
+
     hrirAvailable.store(false);
     
     convA.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), 44100, dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
@@ -279,4 +352,277 @@ void AudioPluginAudioProcessor::updateHRIR() {
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new AudioPluginAudioProcessor();
+}
+
+
+//==============================================================================
+// LFO Methods
+
+
+void AudioPluginAudioProcessor::processLFOs() 
+{
+    if (*parameters.getRawParameterValue("param_lfo_start") > 0.5f) 
+    {
+        // X LFO
+        if ((*parameters.getRawParameterValue("param_xlfo_rate") > 0.0f) && (*parameters.getRawParameterValue("param_xlfo_depth") > 0.0f))
+        {
+            float frequency = *parameters.getRawParameterValue("param_xlfo_rate");
+            float phase = *parameters.getRawParameterValue("param_xlfo_phase");
+            float amplitude = *parameters.getRawParameterValue("param_xlfo_depth") / 10.0f;
+            float offset = *parameters.getRawParameterValue("param_xlfo_offset");
+
+            xLFO->setFrequency(frequency);
+            float xlfoSample = amplitude * std::sin(xLFO->processSample(degreesToRadians(phase))) + offset;
+
+            xlfoSample = juce::jlimit(-10.0f, 10.0f, xlfoSample);
+            float normalizedX = PluginParameters::xRange.convertTo0to1(xlfoSample);
+            parameters.getParameter("param_x")->setValueNotifyingHost(normalizedX);
+        }
+        // Y LFO
+        if ((*parameters.getRawParameterValue("param_ylfo_rate") > 0.0f) && (*parameters.getRawParameterValue("param_ylfo_depth") > 0.0f))
+        {
+            float frequency = *parameters.getRawParameterValue("param_ylfo_rate");
+            float phase = *parameters.getRawParameterValue("param_ylfo_phase");
+            float amplitude = *parameters.getRawParameterValue("param_ylfo_depth") / 10.0f;
+            float offset = *parameters.getRawParameterValue("param_ylfo_offset");
+
+            yLFO->setFrequency(frequency);
+            float ylfoSample = amplitude * std::sin(yLFO->processSample(degreesToRadians(phase))) + offset;
+
+            ylfoSample = juce::jlimit(-10.0f, 10.0f, ylfoSample);
+            float normalizedY = PluginParameters::yRange.convertTo0to1(ylfoSample);
+            parameters.getParameter("param_y")->setValueNotifyingHost(normalizedY);
+        }
+        // Z LFO
+        if ((*parameters.getRawParameterValue("param_zlfo_rate") > 0.0f) && (*parameters.getRawParameterValue("param_zlfo_depth") > 0.0f))
+        {
+            float frequency = *parameters.getRawParameterValue("param_zlfo_rate");
+            float phase = *parameters.getRawParameterValue("param_zlfo_phase");
+            float amplitude = *parameters.getRawParameterValue("param_zlfo_depth") / 10.0f;
+            float offset = *parameters.getRawParameterValue("param_zlfo_offset");
+
+            zLFO->setFrequency(frequency);
+            float zlfoSample = amplitude * std::sin(zLFO->processSample(degreesToRadians(phase))) + offset;
+
+            zlfoSample = juce::jlimit(-10.0f, 10.0f, zlfoSample);
+            float normalizedZ = PluginParameters::zRange.convertTo0to1(zlfoSample);
+            parameters.getParameter("param_z")->setValueNotifyingHost(normalizedZ);
+        }
+    }
+}
+
+void AudioPluginAudioProcessor::refreshLFOs() 
+{
+    xLFO->reset();
+    yLFO->reset();
+    zLFO->reset();
+    xLFO->initialise([](float x) { return x;}, 128);
+    yLFO->initialise([](float x) { return x;}, 128);
+    zLFO->initialise([](float x) { return x;}, 128);
+}
+
+
+
+void AudioPluginAudioProcessor::applyPreset(int presetOption) 
+{
+    switch (presetOption) {
+        case 0: // Custom
+            // Benutzerdefinierte Parameter, nichts zu tun
+            break;
+        case 1: // Top View: Great Circle
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 100.f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 100.f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break; 
+        case 2: // Top View: Eight Figure
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.3f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 100.f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.6f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 50.f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break;
+        case 3: // Top View: 3D Infinity 
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.6f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 50.f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.3f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 100.f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.6f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 100.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break;
+        case 4: //  Front View: Diagonal Circle
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 33.3f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 66.6f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 99.9f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true; 
+                break;
+        case 5: // Top View: Diagonal Eight
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.3f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 100.f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.6f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 50.f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.3f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 100.f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break;
+        case 6: // Top View: Sparse Spiral
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.2f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 100.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.6f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 100.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.6f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 100.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true; 
+                break;
+        case 7: // Top View: Dense Spiral
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.1f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 100.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 1.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 28.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 1.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 100.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = -180.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break;
+        case 8: // Top View: 3D Horsehoe
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.4f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 75.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.2f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 75.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.4f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 100.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = -90.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break;
+        case 9: // Ping Pong
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.1f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 27.3f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 6.5f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.9f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 44.2f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true; 
+                break;
+        case 10: // Top View: Small Circle - Front Left
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break;
+        case 11: // Top View: Small Circle - Front Right
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break;
+        case 12: // Top View: Small Circle - Back Left
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break;
+        case 13: // Top View: Small Circle - Back Right 
+                parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::ZLFO_OFFSET_ID.getParamID()) = 0.0f;
+                parameters.getParameterAsValue(PluginParameters::LFO_START_ID.getParamID()) = true;
+                break;        
+    }
 }

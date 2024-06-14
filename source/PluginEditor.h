@@ -19,7 +19,8 @@ public:
 private:
     void setEditorDimensions();
     void timerCallback() override;
-    void pannerChanged(float azimuth, float elevation) override;
+    void pannerChanged(float x, float y);
+
 
 private:
     AudioPluginAudioProcessor& processorRef;

@@ -1,6 +1,7 @@
 cmake-build*
 build*/
 .idea/
+.vscode/
 modules/OpenBLAS*
 .DS_Store
 /tests/output*

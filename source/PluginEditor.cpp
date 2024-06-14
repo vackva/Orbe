@@ -17,7 +17,10 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     startTimerHz(30);
 
     pannerVisualisation.addListener(this);
+
 }
+
+
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 {
@@ -57,17 +60,24 @@ void AudioPluginAudioProcessorEditor::setEditorDimensions() {
 }
 
 void AudioPluginAudioProcessorEditor::timerCallback() {
-    float paramAzim = processorRef.getAtomicParameterValue(PluginParameters::AZIM_ID.getParamID());
-    float paramElev = processorRef.getAtomicParameterValue(PluginParameters::ELEV_ID.getParamID());
-    pannerVisualisation.setAzimuthAndElevation(paramAzim, paramElev);
+    float normalizedX = processorRef.getValueTreeState().getParameter("param_x")->getValue();
+    float normalizedY = processorRef.getValueTreeState().getParameter("param_y")->getValue();
+    float normalizedZ = processorRef.getValueTreeState().getParameter("param_z")->getValue();
+
+    float x = PluginParameters::xRange.convertFrom0to1(normalizedX);
+    float y = PluginParameters::yRange.convertFrom0to1(normalizedY);
+    float z = PluginParameters::zRange.convertFrom0to1(normalizedZ);
+
+    pannerVisualisation.setVisualPosition(x, y, z);
 }
 
-void AudioPluginAudioProcessorEditor::pannerChanged(float azimuth, float elevation) {
+void AudioPluginAudioProcessorEditor::pannerChanged(float x, float y) {
     auto& processorParams = processorRef.getValueTreeState();
 
-    auto paramAzim = processorParams.getParameter(PluginParameters::AZIM_ID.getParamID());
-    auto paramElev = processorParams.getParameter(PluginParameters::ELEV_ID.getParamID());
+    auto paramX = processorParams.getParameter(PluginParameters::X_ID.getParamID());
+    auto paramY = processorParams.getParameter(PluginParameters::Y_ID.getParamID());
 
-    paramAzim->setValueNotifyingHost(paramAzim->convertTo0to1(azimuth));
-    paramElev->setValueNotifyingHost(paramElev->convertTo0to1(elevation));
+    paramX->setValueNotifyingHost(paramX->convertTo0to1(x));
+    paramY->setValueNotifyingHost(paramY->convertTo0to1(y));
 }
+
