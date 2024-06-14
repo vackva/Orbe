@@ -86,6 +86,9 @@ private:
     
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineLeft;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineRight;
+
+    float delayTimeLeft = 0;
+    float delayTimeRight = 0;
     
     juce::SmoothedValue<float> smoothDelayLeft { 0.0f };
     juce::SmoothedValue<float> smoothDelayRight { 0.0f };

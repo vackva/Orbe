@@ -177,72 +177,26 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::dsp::ProcessContextReplacing<float> context(block);
     
 
-    if (convolutionReady) 
+    if ( convolutionReady) 
     {
-        //currentConvolution.process(context);
-        
-        if ( activConvIsA )
-        {
-            convA.process( context );
-        }
-        else
-        {
-            convB.process( context );
-        }
-       
-        if (hrirChanged)
-        {
-            // copy avoiding allocation -> check if really no memory gets allocated
-            bufferCopy.makeCopyOf(buffer, true);
-            juce::dsp::AudioBlock<float> blockCopy(bufferCopy);
-            
-            juce::dsp::ProcessContextReplacing<float> contextCopy(blockCopy);
-            
-            if ( activConvIsA )
-            {
-                convB.process( contextCopy );
-            }
-            else
-            {
-                convA.process( contextCopy );
-            }
-            
-            // cross over mix buffers convolved with current and previous hrir
-            crossoverFactor.setTargetValue( 1.0f );
-            buffer.applyGain( (1  - crossoverFactor.getNextValue()) );
-            bufferCopy.applyGain( crossoverFactor.getNextValue()  );
-            
-            for (int channel = 0; channel < buffer.getNumChannels(); channel++)
-            {
-                buffer.addFrom(channel, 0, bufferCopy, channel, 0, buffer.getNumSamples());
-            }
-            
-            hrirChanged = false;
-            
-            // update active convolution
-            activConvIsA = (activConvIsA) ? false : true;
-        }
-        
+        convA.process( context );
     }
     
-    // APPLY DELAY
-    float leftDelay = 12; //hrirLoader.currentLeftDelay; // * getSampleRate(); -> CONVERSION TO SAMPLES NECESSARY?
-    float rightDelay= 12; //hrirLoader.currentRightDelay; // * getSampleRate();
-    
-    smoothDelayLeft.setTargetValue( leftDelay );
-    smoothDelayRight.setTargetValue( rightDelay );
-    
-    delayLineLeft.setDelay( smoothDelayLeft.getNextValue() );
-    delayLineRight.setDelay( smoothDelayRight.getNextValue() );
-    
-    juce::dsp::AudioBlock<float> blockLeft = block.getSingleChannelBlock(0);
-    juce::dsp::AudioBlock<float> blockRight = block.getSingleChannelBlock(1);
-    
-    juce::dsp::ProcessContextReplacing<float> contextLeft( blockLeft );
-    juce::dsp::ProcessContextReplacing<float> contextRight ( blockRight );
-    
-    delayLineLeft.process( contextLeft );
-    delayLineRight.process( contextRight );
+    // APPLY DELAY    
+    smoothDelayLeft.setTargetValue( delayTimeLeft );
+    smoothDelayRight.setTargetValue( delayTimeRight );
+
+    for (int sample = 0; sample < buffer.getNumSamples(); sample++)
+        {
+            delayLineLeft.setDelay( smoothDelayLeft.getNextValue() );
+            delayLineRight.setDelay( smoothDelayRight.getNextValue() );
+
+            delayLineLeft.pushSample(0, buffer.getSample(0, sample));
+            delayLineRight.pushSample(0, buffer.getSample(1, sample));
+
+            buffer.setSample(0, sample, delayLineLeft.popSample(0));
+            buffer.setSample(1, sample, delayLineRight.popSample(0));
+        }
     
     buffer.applyGain(0.5);
 }
@@ -307,18 +261,9 @@ juce::AudioProcessorValueTreeState &AudioPluginAudioProcessor::getValueTreeState
 void AudioPluginAudioProcessor::updateHRIR() {
     hrirAvailable.store(false);
     
-    if (activConvIsA)
-    {
-        convB.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-    }
-    else
-    {
-        convA.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-    }
-    /*
-    currentConvolution.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-    previousConvolution.loadImpulseResponse(std::move(hrirLoader.getPreviousHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);*/
-
+    convA.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), 44100, dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    hrirLoader.getCurrentDelays(delayTimeLeft, delayTimeRight, getSampleRate());
+    
     hrirLoader.hrirAccessed();
     convolutionReady = true;
     hrirChanged = true;

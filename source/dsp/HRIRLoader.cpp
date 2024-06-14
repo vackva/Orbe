@@ -38,6 +38,11 @@ void HRIRLoader::run() {
     }
 }
 
+void HRIRLoader::getCurrentDelays(float &left, float &right, float samplerate){
+    left = currentLeftDelay / 44100 * samplerate;
+    right = currentRightDelay / 44100 * samplerate;
+}
+
 bool HRIRLoader::submitJob(float azm, float elev) {
     if (hrirFinished.load()) {
         hrirFinished.store(false);

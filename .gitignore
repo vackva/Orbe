@@ -5,3 +5,4 @@ modules/OpenBLAS*
 .DS_Store
 /tests/output*
 !tests/output/.gitkeep
+venv
