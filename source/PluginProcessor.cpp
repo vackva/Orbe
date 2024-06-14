@@ -136,10 +136,7 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     //currentConvolution.prepare(processSpec);
     //previousConvolution.prepare(processSpec);
     
-    convA.prepare(processSpec);
-    convB.prepare(processSpec);
-    
-    crossoverFactor.reset( samplesPerBlock );
+    convolution.prepare(processSpec);    
     
     int numDelayChannels = 1;
     dsp::ProcessSpec delaySpec{sampleRate,
@@ -149,14 +146,13 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     delayLineLeft.prepare(delaySpec);
     delayLineRight.prepare(delaySpec);
     
-    smoothDelayLeft.reset( samplesPerBlock );
-    smoothDelayRight.reset( samplesPerBlock );
+    smoothDelayLeft.reset( sampleRate, 0.1 );
+    smoothDelayRight.reset( sampleRate, 0.1 );
     
     float maxDelayInSamples = sampleRate * 2;
     delayLineLeft.setMaximumDelayInSamples( maxDelayInSamples );
     delayLineRight.setMaximumDelayInSamples( maxDelayInSamples );
     
-    bufferCopy.setSize(processSpec.numChannels, processSpec.maximumBlockSize);
 
     convolutionReady = false;
 
@@ -231,12 +227,25 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     if ( convolutionReady) 
     {
-        convA.process( context );
+        convolution.process( context );
     }
     
-    // APPLY DELAY    
-    smoothDelayLeft.setTargetValue( delayTimeLeft );
-    smoothDelayRight.setTargetValue( delayTimeRight );
+    // Apply Distance Compensation
+    float distance = paramDistance.load();
+    float distanceGain =  0.2 / (jmax(0.0f, distance) + 1);
+    buffer.applyGainRamp(0, buffer.getNumSamples(), lastDistanceGain, distanceGain);
+    lastDistanceGain = distanceGain;
+
+    // APPLY DELAY   
+    if (true) { // dopplereffect enabled
+        float doppler_delay = distance / 343 * getSampleRate(); 
+        smoothDelayLeft.setTargetValue( delayTimeLeft + doppler_delay);
+        smoothDelayRight.setTargetValue( delayTimeRight + doppler_delay );
+    } else {
+        smoothDelayLeft.setTargetValue( delayTimeLeft );
+        smoothDelayRight.setTargetValue( delayTimeRight );
+    }
+
 
     for (int sample = 0; sample < buffer.getNumSamples(); sample++)
         {
@@ -251,10 +260,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
     
     buffer.applyGain(0.5);
-    
-    float distanceGain =  0.2 / (jmax(0.0f, paramDistance.load()) + 1);
-    buffer.applyGainRamp(0, buffer.getNumSamples(), lastDistanceGain, distanceGain);
-    lastDistanceGain = distanceGain;
+
+
 }
 
 //==============================================================================
@@ -339,12 +346,11 @@ void AudioPluginAudioProcessor::updateHRIR() {
 
     hrirAvailable.store(false);
     
-    convA.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), 44100, dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    convolution.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), 44100, dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
     hrirLoader.getCurrentDelays(delayTimeLeft, delayTimeRight, getSampleRate());
     
     hrirLoader.hrirAccessed();
     convolutionReady = true;
-    hrirChanged = true;
 }
 
 //==============================================================================

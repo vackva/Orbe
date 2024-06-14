@@ -65,17 +65,11 @@ private:
 private:
     juce::AudioProcessorValueTreeState parameters;
 
-    //dsp::Convolution currentConvolution;
-    //dsp::Convolution previousConvolution;
-    
-    juce::AudioBuffer<float> bufferCopy;
-
     HRIRLoader hrirLoader;
 
     bool hrirRequestDenied = false;
     std::atomic<bool> hrirAvailable { false };
     bool convolutionReady = false;
-    bool hrirChanged = false;
 
     std::unique_ptr<juce::dsp::Oscillator<float>> xLFO;
     std::unique_ptr<juce::dsp::Oscillator<float>> yLFO;
@@ -84,15 +78,9 @@ private:
     std::atomic<float> paramAzimuth { 0.0f };
     std::atomic<float> paramElevation { 0.0f };
     std::atomic<float> paramDistance { 0.0f };
-    //std::atomic<bool> hrirChanged { false }; // not used?? -> if needed other member with same name has to be changed
     
-    //enum activConv { activConvIsA, activConvIsB};
-    bool activConvIsA = true;
     
-    juce::dsp::Convolution convA;
-    juce::dsp::Convolution convB;
-    
-    juce::SmoothedValue<float> crossoverFactor { 0.0f };
+    juce::dsp::Convolution convolution;
     
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineLeft;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineRight;
