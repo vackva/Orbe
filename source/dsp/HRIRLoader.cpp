@@ -38,9 +38,9 @@ void HRIRLoader::run() {
     }
 }
 
-void HRIRLoader::getCurrentDelays(float &left, float &right, float samplerate){
-    left = currentLeftDelay / 44100 * samplerate;
-    right = currentRightDelay / 44100 * samplerate;
+void HRIRLoader::getCurrentDelays(float &left, float &right){
+    left = currentLeftDelay;
+    right = currentRightDelay;
 }
 
 bool HRIRLoader::submitJob(float azm, float elev) {

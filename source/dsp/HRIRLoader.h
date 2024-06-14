@@ -20,7 +20,7 @@ public:
     void hrirAccessed ();
 
     juce::AudioBuffer<float>& getCurrentHRIR();
-    void getCurrentDelays(float &left, float &right, float samplerate);
+    void getCurrentDelays(float &left, float &right);
     //juce::AudioBuffer<float>& getPreviousHRIR();
 
     // TODO replace with Listener
