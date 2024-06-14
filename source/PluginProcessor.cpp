@@ -170,7 +170,12 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         hrirRequestDenied = false;
         requestNewHRIR();
     }
-    
+    // MAKE SIGNAL MONO
+
+    buffer.addFrom(0, 0, buffer.getReadPointer(1), buffer.getNumSamples());
+    buffer.applyGain(0.5);
+    buffer.copyFrom(1, 0, buffer.getReadPointer(0), buffer.getNumSamples());
+
     // APPLY CONVOLUTION
     
     juce::dsp::AudioBlock<float> block(buffer);
