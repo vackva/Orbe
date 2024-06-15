@@ -1,7 +1,9 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include <juce_dsp/juce_dsp.h>
+// #include <juce_dsp/juce_dsp.h>
+#include <juce_custom_dsp/juce_custom_dsp.h>
+// #include "dsp/custom_Convolution.h"
 
 #include "PluginParameters.h"
 #include "dsp/HRIRLoader.h"
@@ -80,7 +82,7 @@ private:
     std::atomic<float> paramDistance { 0.0f };
     
     
-    juce::dsp::Convolution convolution;
+    juce::dsp::CustomConvolution convolution;
     
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineLeft;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineRight;

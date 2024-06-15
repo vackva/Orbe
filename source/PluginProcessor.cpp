@@ -346,7 +346,7 @@ void AudioPluginAudioProcessor::updateHRIR() {
 
     hrirAvailable.store(false);
     
-    convolution.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
+    convolution.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), dsp::CustomConvolution::Stereo::yes, dsp::CustomConvolution::Trim::no, dsp::CustomConvolution::Normalise::no);
     hrirLoader.getCurrentDelays(delayTimeLeft, delayTimeRight);
     
     hrirLoader.hrirAccessed();
