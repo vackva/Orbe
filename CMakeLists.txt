@@ -56,6 +56,8 @@ target_sources(${TARGET_NAME}
 
         source/ui/PannerVisualisation.cpp
         source/ui/BackgroundComponent.cpp
+
+        source/dsp/convolution/custom_juce_Convolution.cpp
 )
 
 set(SOFA_TEST_FILE "${CMAKE_CURRENT_LIST_DIR}/assets/pp2_HRIRs_measured_time_aligned.sofa")
