@@ -12,44 +12,21 @@ class CustomGenericAudioProcessorEditor : public juce::GenericAudioProcessorEdit
 public:
     CustomGenericAudioProcessorEditor(juce::AudioProcessor& processor)
             : juce::GenericAudioProcessorEditor(processor) {
-        // Set the size if needed
         setSize(400, 300);
-
     }
 
     void paint(juce::Graphics& g) override {
-        // Set the background color
         g.setColour(juce::Colour{0xff151517});
         g.fillAll();
     }
 };
+
 class ParameterComponent : public juce::Component {
 public:
-    ParameterComponent(AudioPluginAudioProcessor& processor) : processorRef(processor) {
-        // Use the custom generic editor
-        genericParameter = std::make_unique<CustomGenericAudioProcessorEditor>(processorRef);
-        addAndMakeVisible(*genericParameter);
-    }
+    explicit ParameterComponent(AudioPluginAudioProcessor& processor);
 
-    void paint(juce::Graphics& g) override {
-        g.setColour(juce::Colours::transparentBlack);
-        g.fillAll();
-        g.setColour(juce::Colour{0xff151517});
-        g.fillRoundedRectangle(getLocalBounds().toFloat(), 10.f);
-
-        auto bounds = getLocalBounds();
-        auto headerBounds = bounds.removeFromTop(static_cast<int>((float)getHeight() * 0.2f));
-        orbeLogo->drawWithin(g, headerBounds.toFloat(), juce::RectanglePlacement::doNotResize, 1.f);
-    }
-
-    void resized() override {
-        auto bounds = getLocalBounds();
-        auto headerBounds = bounds.removeFromTop(static_cast<int>((float)getHeight() * 0.2f));
-        bounds.removeFromBottom(10);
-        auto paramBounds = bounds;
-
-        genericParameter->setBounds(paramBounds);
-    }
+    void paint(juce::Graphics& g) override;
+    void resized() override;
 
 private:
     AudioPluginAudioProcessor& processorRef;

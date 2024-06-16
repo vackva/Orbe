@@ -40,7 +40,7 @@ juce_add_plugin(${TARGET_NAME}
     PLUGIN_CODE Dem0                            # A unique four-character plugin id with exactly one upper-case character
                                                 # GarageBand 10.3 requires the first letter to be upper-case, and the remaining letters to be lower-case
     FORMATS ${FORMATS_TO_BUILD}                 # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
-    PRODUCT_NAME "Binaural Panner"              # The name of the final executable, which can differ from the target name
+    PRODUCT_NAME "Orbe"              # The name of the final executable, which can differ from the target name
 )
 
 juce_generate_juce_header(${TARGET_NAME})
@@ -51,11 +51,13 @@ target_sources(${TARGET_NAME}
         source/PluginProcessor.cpp
         source/PluginParameters.cpp
 
-        source/dsp/HRIRLoader.cpp
-        source/dsp/SofaReader.cpp
-
         source/ui/PannerVisualisation.cpp
         source/ui/BackgroundComponent.cpp
+        source/ui/PannerComponent.cpp
+        source/ui/ParameterComponent.cpp
+
+        source/dsp/HRIRLoader.cpp
+        source/dsp/SofaReader.cpp
 
         source/dsp/convolution/custom_juce_Convolution.cpp
 )
@@ -64,11 +66,11 @@ set(SOFA_TEST_FILE "${CMAKE_CURRENT_LIST_DIR}/assets/pp2_HRIRs_measured_time_ali
 
 target_compile_definitions(${TARGET_NAME}
     PUBLIC
-        JUCE_WEB_BROWSER=0  # If you remove this, add `NEEDS_WEB_BROWSER TRUE` to the `juce_add_plugin` call
-        JUCE_USE_CURL=0     # If you remove this, add `NEEDS_CURL TRUE` to the `juce_add_plugin` call
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
-        SOFA_TEST_FILE_PATH="${SOFA_TEST_FILE}"
         JUCE_SILENCE_XCODE_15_LINKER_WARNING=1
+        JUCE_DISPLAY_SPLASH_SCREEN=0
 )
 
 juce_add_binary_data(AudioPluginData SOURCES
@@ -83,6 +85,10 @@ target_link_libraries(${TARGET_NAME}
         AudioPluginData
         juce::juce_audio_utils
         juce::juce_dsp
+        juce::juce_opengl
+        juce::juce_graphics
+        juce::juce_gui_basics
+        juce::juce_gui_extra
         mysofa-static 
     PUBLIC
         juce::juce_recommended_config_flags

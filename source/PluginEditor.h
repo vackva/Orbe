@@ -9,7 +9,7 @@
 #include "ui/ParameterComponent.h"
 
 //==============================================================================
-class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor, juce::Timer, PannerVisualisation::Listener
+class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
 {
 public:
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
@@ -21,19 +21,11 @@ public:
 
 private:
     void setEditorDimensions();
-    void timerCallback() override;
-    void pannerChanged(float x, float y);
-
 
 private:
     AudioPluginAudioProcessor& processorRef;
 
-    BackgroundComponent backgroundComponent;
-
     ParameterComponent parameterComponent;
     PannerComponent pannerComponent;
-
-    PannerVisualisation pannerVisualisation;
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };
