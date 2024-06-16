@@ -73,6 +73,9 @@ target_compile_definitions(${TARGET_NAME}
 
 juce_add_binary_data(AudioPluginData SOURCES
     assets/pp2_HRIRs_measured_time_aligned.sofa
+    assets/images/orbe.svg
+    assets/images/button_2d.svg
+    assets/images/button_3d.svg
 )
 
 target_link_libraries(${TARGET_NAME}

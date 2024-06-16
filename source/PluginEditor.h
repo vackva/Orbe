@@ -5,6 +5,9 @@
 #include "ui/BackgroundComponent.h"
 #include "ui/PannerVisualisation.h"
 
+#include "ui/PannerComponent.h"
+#include "ui/ParameterComponent.h"
+
 //==============================================================================
 class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor, juce::Timer, PannerVisualisation::Listener
 {
@@ -26,8 +29,11 @@ private:
     AudioPluginAudioProcessor& processorRef;
 
     BackgroundComponent backgroundComponent;
+
+    ParameterComponent parameterComponent;
+    PannerComponent pannerComponent;
+
     PannerVisualisation pannerVisualisation;
-    std::unique_ptr<juce::GenericAudioProcessorEditor> genericParameter;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };
