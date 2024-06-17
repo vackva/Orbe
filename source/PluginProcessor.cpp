@@ -20,6 +20,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
         parameters.addParameterListener(parameterID, this);
     }
 
+    hrirChoiceParam = dynamic_cast<juce::AudioParameterChoice*> ( parameters.getParameter( PluginParameters::HRIRS_ID.getParamID() ) );
     
     paramAzimuth.store(PluginParameters::defaultAzimParam);
     paramElevation.store(PluginParameters::defaultElevParam);
@@ -131,8 +132,10 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     dsp::ProcessSpec processSpec {sampleRate,
                                   (juce::uint32) samplesPerBlock,
                                   (juce::uint32) getTotalNumInputChannels() };
-
-    hrirLoader.prepare(processSpec);
+    
+    hrirChoices hrirChoice = static_cast<hrirChoices> ( hrirChoiceParam->getIndex() );
+    
+    hrirLoader.prepare(processSpec, hrirChoice);
     
     //currentConvolution.prepare(processSpec);
     //previousConvolution.prepare(processSpec);
@@ -318,8 +321,12 @@ void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, floa
     // Change hrir if hrirs parameter changed
     if (parameterID == PluginParameters::HRIRS_ID.getParamID() )
     {
-        auto hrirChoiceParam = dynamic_cast<juce::AudioParameterChoice*> ( parameters.getParameter( PluginParameters::HRIRS_ID.getParamID() ) );
-        hrirChoice = static_cast<hrirChoices> ( hrirChoiceParam->getIndex() );
+        dsp::ProcessSpec processSpec {getSampleRate(),
+                                      (juce::uint32) getBlockSize(),
+                                      (juce::uint32) getTotalNumInputChannels() };
+        
+        hrirChoices hrirChoice = static_cast<hrirChoices> ( hrirChoiceParam->getIndex() );
+        hrirLoader.prepare(processSpec, hrirChoice);
     }
     
     parameterListener.parameterChanged(parameterID, newValue);

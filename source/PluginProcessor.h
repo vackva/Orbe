@@ -67,6 +67,8 @@ private:
     juce::AudioProcessorValueTreeState parameters;
 
     HRIRLoader hrirLoader;
+    
+    juce::AudioParameterChoice* hrirChoiceParam;
 
     bool hrirRequestDenied = false;
     std::atomic<bool> hrirAvailable { false };

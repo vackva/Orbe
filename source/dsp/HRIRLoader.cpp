@@ -7,10 +7,10 @@ HRIRLoader::~HRIRLoader() {
     stopThread(10);
 }
 
-void HRIRLoader::prepare(const juce::dsp::ProcessSpec spec) {
+void HRIRLoader::prepare(const juce::dsp::ProcessSpec spec, hrirChoices hrirChoice) {
     stopThread(10);
 
-    sofaReader.prepare(spec.sampleRate);
+    sofaReader.prepare(spec.sampleRate, hrirChoice);
     currentSpec = spec;
 
     startThread(juce::Thread::Priority::high);

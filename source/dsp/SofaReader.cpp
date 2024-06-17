@@ -5,7 +5,7 @@ SofaReader::~SofaReader() {
     sofa.reset();
 }
 
-void SofaReader::prepare(double samplerate)
+void SofaReader::prepare(double samplerate, hrirChoices hrirChoice)
 {
     
     auto sofaBinary = BinaryData::pp2_HRIRs_measured_sofa;

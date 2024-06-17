@@ -14,7 +14,7 @@ public:
     HRIRLoader();
     ~HRIRLoader();
 
-    void prepare(const juce::dsp::ProcessSpec spec);
+    void prepare(const juce::dsp::ProcessSpec spec, hrirChoices hrirChoice);
     bool submitJob(float azm, float elev);
 
     void hrirAccessed ();

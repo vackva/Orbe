@@ -16,14 +16,14 @@ enum hrirChoices
     interpolated_mca
 };
 
-static hrirChoices hrirChoice = hrirChoices::measured;
+//static hrirChoices hrirChoice = hrirChoices::measured;
 
 class SofaReader {
 public:
     SofaReader() = default;
     ~SofaReader();
 
-    void prepare(double samplerate);
+    void prepare(double samplerate, hrirChoices hrirChoice);
 
     int get_ir_length();
     void get_hrirs(juce::AudioBuffer<float>& buffer, float azim, float elev, float dist, float &currentLeftDelay, float &currentRightDelay);
