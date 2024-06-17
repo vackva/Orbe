@@ -62,7 +62,7 @@ target_sources(${TARGET_NAME}
         source/dsp/convolution/custom_juce_Convolution.cpp
 )
 
-set(SOFA_TEST_FILE "${CMAKE_CURRENT_LIST_DIR}/assets/pp2_HRIRs_measured_time_aligned.sofa")
+set(SOFA_TEST_FILE "${CMAKE_CURRENT_LIST_DIR}/assets/pp2_HRIRs_interpolated_mca_time_aligned.sofa")
 
 target_compile_definitions(${TARGET_NAME}
     PUBLIC
@@ -74,7 +74,7 @@ target_compile_definitions(${TARGET_NAME}
 )
 
 juce_add_binary_data(AudioPluginData SOURCES
-    assets/pp2_HRIRs_measured_time_aligned.sofa
+    assets/pp2_HRIRs_interpolated_mca_time_aligned.sofa
     assets/images/orbe.svg
     assets/images/button_2d.svg
     assets/images/button_3d.svg

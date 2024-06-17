@@ -10,7 +10,7 @@ void SofaReader::prepare(double samplerate) {
         sofa.reset();
     }
     int err;
-    sofa = std::make_unique<MYSOFA_EASY*>(mysofa_open_data(BinaryData::pp2_HRIRs_measured_time_aligned_sofa, BinaryData::pp2_HRIRs_measured_time_aligned_sofaSize, static_cast<float>(samplerate), &ir_length, &err));
+    sofa = std::make_unique<MYSOFA_EASY*>(mysofa_open_data(BinaryData::pp2_HRIRs_interpolated_mca_time_aligned_sofa, BinaryData::pp2_HRIRs_interpolated_mca_time_aligned_sofaSize, static_cast<float>(samplerate), &ir_length, &err));
     switch (err) {
         case MYSOFA_OK: 
             std::cout << "Successfully loaded Sofa File" << std::endl;
