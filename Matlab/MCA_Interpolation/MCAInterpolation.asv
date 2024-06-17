@@ -18,13 +18,18 @@ fs = 44100;
 earDistance = 0.165;
 sourceDistance = 1.47;
 
-for hrtf = interpHRTF_sh interpHRTF_sh_timealign interpHRTF_mca]
-   HRIR_L = permute(interpHRTF_mca.HRIR_L,[2 1]);
-end
+HRIR_L = permute(interpHRTF_sh.HRIR_L,[2 1]);
+HRIR_R = permute(interpHRTF_sh.HRIR_R,[2 1]);
+SOFAobj = supdeq_writeSOFAobj(HRIR_L, HRIR_R, denseSamplingGrid, fs, earDistance, sourceDistance); 
+SOFAsave('pp2_HRIRs_interpolated_sh.sofa', SOFAobj);
+
+HRIR_L = permute(interpHRTF_sh_timealign.HRIR_L,[2 1]);
+HRIR_R = permute(interpHRTF_sh_timealign.HRIR_R,[2 1]);
+SOFAobj = supdeq_writeSOFAobj(HRIR_L, HRIR_R, denseSamplingGrid, fs, earDistance, sourceDistance); 
+SOFAsave('pp2_HRIRs_interpolated_sh_timealign.sofa', SOFAobj);
+
 HRIR_L = permute(interpHRTF_mca.HRIR_L,[2 1]);
 HRIR_R = permute(interpHRTF_mca.HRIR_R,[2 1]);
 SOFAobj = supdeq_writeSOFAobj(HRIR_L, HRIR_R, denseSamplingGrid, fs, earDistance, sourceDistance); 
-
-% Save SOFA file
-SOFAsave('pp2_HRIRs_interpolated_mca', SOFAobj);
+SOFAsave('pp2_HRIRs_interpolated_mca.sofa', SOFAobj);
 
