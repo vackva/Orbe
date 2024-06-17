@@ -8,6 +8,16 @@
 #include <JuceHeader.h>
 #include <mysofa.h>
 
+enum hrirChoices
+{
+    measured,
+    interpolated_sh,
+    interpolated_sh_timealign,
+    interpolated_mca
+};
+
+static hrirChoices hrirChoice = hrirChoices::measured;
+
 class SofaReader {
 public:
     SofaReader() = default;

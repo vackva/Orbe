@@ -15,11 +15,12 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
        parameterListener(parameters)
 
 {
+    
     for (auto & parameterID : PluginParameters::getPluginParameterList()) {
         parameters.addParameterListener(parameterID, this);
     }
 
-
+    
     paramAzimuth.store(PluginParameters::defaultAzimParam);
     paramElevation.store(PluginParameters::defaultElevParam);
     paramDistance.store(PluginParameters::defaultDistParam);
@@ -155,8 +156,8 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     
 
     convolutionReady = false;
-
-    requestNewHRIR();
+    
+    requestNewHRIR( );
 
     xLFO->prepare(juce::dsp::ProcessSpec({ getSampleRate() / getBlockSize(), (juce::uint32)getBlockSize(), 1 }));
     xLFO->setFrequency(0.f);
@@ -313,6 +314,14 @@ void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, floa
         parameterID == PluginParameters::ZLFO_RATE_ID.getParamID()) {
         refreshLFOs();
     }
+    
+    // Change hrir if hrirs parameter changed
+    if (parameterID == PluginParameters::HRIRS_ID.getParamID() )
+    {
+        auto hrirChoiceParam = dynamic_cast<juce::AudioParameterChoice*> ( parameters.getParameter( PluginParameters::HRIRS_ID.getParamID() ) );
+        hrirChoice = static_cast<hrirChoices> ( hrirChoiceParam->getIndex() );
+    }
+    
     parameterListener.parameterChanged(parameterID, newValue);
 }
 
@@ -333,7 +342,6 @@ float AudioPluginAudioProcessor::getAtomicParameterValue(const String &parameter
     else {
         return 0.0f;
     }
-
 
 }
 

@@ -5,12 +5,39 @@ SofaReader::~SofaReader() {
     sofa.reset();
 }
 
-void SofaReader::prepare(double samplerate) {
+void SofaReader::prepare(double samplerate)
+{
+    
+    auto sofaBinary = BinaryData::pp2_HRIRs_measured_sofa;
+    auto sofaSizeBinary = BinaryData::pp2_HRIRs_measured_sofaSize;
+    
+    switch (hrirChoice)
+    {
+        case hrirChoices::measured:
+            sofaBinary = BinaryData::pp2_HRIRs_measured_sofa;
+            sofaSizeBinary = BinaryData::pp2_HRIRs_measured_sofaSize;
+            break;
+        case hrirChoices::interpolated_sh:
+            sofaBinary = BinaryData::pp2_HRIRs_interpolated_sh_sofa;
+            sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_sh_sofaSize;
+            break;
+        case hrirChoices::interpolated_sh_timealign:
+            sofaBinary = BinaryData::pp2_HRIRs_interpolated_sh_timealign_sofa;
+            sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_sh_timealign_sofaSize;
+            break;
+        case hrirChoices::interpolated_mca:
+            sofaBinary = BinaryData::pp2_HRIRs_interpolated_mca_time_aligned_sofa;
+            sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_mca_time_aligned_sofaSize;
+            break;
+        default:
+            break;
+    }
+    
     if (sofa != nullptr){
         sofa.reset();
     }
     int err;
-    sofa = std::make_unique<MYSOFA_EASY*>(mysofa_open_data(BinaryData::pp2_HRIRs_interpolated_mca_time_aligned_sofa, BinaryData::pp2_HRIRs_interpolated_mca_time_aligned_sofaSize, static_cast<float>(samplerate), &ir_length, &err));
+    sofa = std::make_unique<MYSOFA_EASY*>(mysofa_open_data(sofaBinary, sofaSizeBinary, static_cast<float>(samplerate), &ir_length, &err));
     switch (err) {
         case MYSOFA_OK: 
             std::cout << "Successfully loaded Sofa File" << std::endl;

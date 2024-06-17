@@ -54,10 +54,11 @@ public:
 private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
     void updateHRIR();
-    void requestNewHRIR() {
+    void requestNewHRIR()
+    {
         bool success = hrirLoader.submitJob(paramAzimuth.load(), paramElevation.load());
         hrirRequestDenied = !success;
-        }
+    }
     void applyPreset(int presetOption);
     void processLFOs();
     void refreshLFOs();

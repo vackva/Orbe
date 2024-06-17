@@ -25,7 +25,8 @@ public:
             ZLFO_DEPTH_ID = {"param_zlfo_depth", 1},
             ZLFO_PHASE_ID = {"param_zlfo_phase", 1},
             ZLFO_OFFSET_ID = {"param_zlfo_offset", 1},
-            PRESETS_ID = {"param_presets", 1};
+            PRESETS_ID = {"param_presets", 1},
+            HRIRS_ID = {"param_hrirs", 1};
  
 
             
@@ -50,7 +51,8 @@ public:
             ZLFO_DEPTH_NAME = "Z LFO Depth",
             ZLFO_PHASE_NAME = "Z LFO Phase",
             ZLFO_OFFSET_NAME = "Z LFO Offset",
-            PRESETS_NAME = "Presets"; 
+            PRESETS_NAME = "Presets",
+            HRIRS_NAME = "HRIRs";
 
             
     
