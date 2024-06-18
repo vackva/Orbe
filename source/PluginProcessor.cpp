@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Constants.h"
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
@@ -374,13 +375,13 @@ void AudioPluginAudioProcessor::processLFOs()
         {
             float frequency = *parameters.getRawParameterValue("param_xlfo_rate");
             float phase = *parameters.getRawParameterValue("param_xlfo_phase");
-            float amplitude = *parameters.getRawParameterValue("param_xlfo_depth") / 10.0f;
+            float amplitude = (*parameters.getRawParameterValue("param_xlfo_depth") / 100) * HALF_CUBE_EDGE_LENGTH;
             float offset = *parameters.getRawParameterValue("param_xlfo_offset");
 
             xLFO->setFrequency(frequency);
             float xlfoSample = amplitude * std::sin(xLFO->processSample(degreesToRadians(phase))) + offset;
 
-            xlfoSample = juce::jlimit(-10.0f, 10.0f, xlfoSample);
+            xlfoSample = juce::jlimit(PluginParameters::xRange.start, PluginParameters::xRange.end, xlfoSample);
             float normalizedX = PluginParameters::xRange.convertTo0to1(xlfoSample);
             parameters.getParameter("param_x")->setValueNotifyingHost(normalizedX);
         }
@@ -389,13 +390,13 @@ void AudioPluginAudioProcessor::processLFOs()
         {
             float frequency = *parameters.getRawParameterValue("param_ylfo_rate");
             float phase = *parameters.getRawParameterValue("param_ylfo_phase");
-            float amplitude = *parameters.getRawParameterValue("param_ylfo_depth") / 10.0f;
+            float amplitude = (*parameters.getRawParameterValue("param_ylfo_depth") / 100) * HALF_CUBE_EDGE_LENGTH;
             float offset = *parameters.getRawParameterValue("param_ylfo_offset");
 
             yLFO->setFrequency(frequency);
             float ylfoSample = amplitude * std::sin(yLFO->processSample(degreesToRadians(phase))) + offset;
 
-            ylfoSample = juce::jlimit(-10.0f, 10.0f, ylfoSample);
+            ylfoSample = juce::jlimit(PluginParameters::yRange.start, PluginParameters::yRange.end, ylfoSample);
             float normalizedY = PluginParameters::yRange.convertTo0to1(ylfoSample);
             parameters.getParameter("param_y")->setValueNotifyingHost(normalizedY);
         }
@@ -404,13 +405,13 @@ void AudioPluginAudioProcessor::processLFOs()
         {
             float frequency = *parameters.getRawParameterValue("param_zlfo_rate");
             float phase = *parameters.getRawParameterValue("param_zlfo_phase");
-            float amplitude = *parameters.getRawParameterValue("param_zlfo_depth") / 10.0f;
+            float amplitude = (*parameters.getRawParameterValue("param_zlfo_depth") / 100) * HALF_CUBE_EDGE_LENGTH;
             float offset = *parameters.getRawParameterValue("param_zlfo_offset");
 
             zLFO->setFrequency(frequency);
             float zlfoSample = amplitude * std::sin(zLFO->processSample(degreesToRadians(phase))) + offset;
 
-            zlfoSample = juce::jlimit(-10.0f, 10.0f, zlfoSample);
+            zlfoSample = juce::jlimit(PluginParameters::zRange.start, PluginParameters::zRange.end, zlfoSample);
             float normalizedZ = PluginParameters::zRange.convertTo0to1(zlfoSample);
             parameters.getParameter("param_z")->setValueNotifyingHost(normalizedZ);
         }
@@ -559,7 +560,7 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.1f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 27.3f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 6.5f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 6.5f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.9f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 44.2f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 0.0f;
@@ -574,11 +575,11 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
-                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
@@ -589,11 +590,11 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
-                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
@@ -604,11 +605,11 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
-                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
@@ -619,11 +620,11 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
-                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;

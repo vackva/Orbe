@@ -2,6 +2,7 @@
 #define BINAURALPANNER_PLUGINPARAMETERS_H
 
 #include <JuceHeader.h>
+#include "Constants.h"
 
 class PluginParameters {
 public:
@@ -82,22 +83,22 @@ public:
 
     inline static juce::NormalisableRange<float> azimRange {-180.0f, 180.0f, 0.01f},
                                                 elevRange {-90.0f, 90.0f, 0.01f},
-                                                distRange {0.0f, 17.4f, 0.1f},
-                                                xRange {-10.f, 10.f, 0.1f},
-                                                yRange {-10.f, 10.f, 0.1f},
-                                                zRange {-10.f, 10.f, 0.1f},
+                                                distRange {0.0f, static_cast<float>(sqrt(pow(HALF_CUBE_EDGE_LENGTH, 2) * 3)), 0.01f},
+                                                xRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
+                                                yRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
+                                                zRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
                                                 xLFORateRange {0.0f, 1.5f, 0.1f},
                                                 xLFODepthRange {0.0f, 100.f, 0.1f},
                                                 xLFOPhaseRange {-180.f, 180.f, 1.f},
-                                                xLFOOffsetRange {-10.f, 10.f, 0.1f},
+                                                xLFOOffsetRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
                                                 yLFORateRange {0.0f, 1.5f, 0.1f},
                                                 yLFODepthRange {0.0f, 100.f, 0.1f},
                                                 yLFOPhaseRange {-180.f, 180.f, 1.f},
-                                                yLFOOffsetRange {-10.f, 10.f, 0.1f},
+                                                yLFOOffsetRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
                                                 zLFORateRange {0.0f, 1.5f, 0.1f},
                                                 zLFODepthRange {0.0f, 100.f, 0.1f},
                                                 zLFOPhaseRange {-180.f, 180.f, 1.f},
-                                                zLFOOffsetRange {-10.f, 10.f, 0.1f};
+                                                zLFOOffsetRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f};
 
 
 private:

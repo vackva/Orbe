@@ -1,4 +1,5 @@
 #include "PannerVisualisation.h"
+#include "../Constants.h"
 
 PannerVisualisation::PannerVisualisation() : isInitialized(false) {
     smallCircleRadius = 10.0f;
@@ -86,8 +87,8 @@ void PannerVisualisation::mouseDrag(const juce::MouseEvent &event) {
     }
 
     smallCirclePosition = newPos;
-    float newX = - (newPos.y - center.y) / radius * 10.0f;
-    float newY = - (newPos.x - center.x) / radius * 10.0f;
+    float newX = - (newPos.y - center.y) / radius * HALF_CUBE_EDGE_LENGTH;
+    float newY = - (newPos.x - center.x) / radius * HALF_CUBE_EDGE_LENGTH;
 
     listeners.call([newX, newY](Listener& l) { l.pannerChanged(newX, newY); });
 
@@ -116,11 +117,11 @@ void PannerVisualisation::setVisualPosition(float x, float y, float z) {
     auto center = bounds.getCentre().toFloat();
     float outerRadius = static_cast<float>(bounds.getWidth() / 2.0);
 
-    float zScale = ((z + 10) / 20.0f) * 1.5f + 0.5f;
+    float zScale = ((z + HALF_CUBE_EDGE_LENGTH) / CUBE_EDGE_LENGTH) * 1.5f + 0.5f;
     smallCircleRadius = 10.0f * zScale;
 
-    float newX = center.x - (y / 10.0f) * outerRadius;
-    float newY = center.y - (x / 10.0f) * outerRadius;
+    float newX = center.x - (y / HALF_CUBE_EDGE_LENGTH) * outerRadius;
+    float newY = center.y - (x / HALF_CUBE_EDGE_LENGTH) * outerRadius;
 
     smallCirclePosition.setXY(newX, newY);
 
