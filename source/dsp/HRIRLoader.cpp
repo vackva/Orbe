@@ -7,10 +7,11 @@ HRIRLoader::~HRIRLoader() {
     stopThread(10);
 }
 
-void HRIRLoader::prepare(const juce::dsp::ProcessSpec spec, hrirChoices hrirChoice) {
+void HRIRLoader::prepare(const juce::dsp::ProcessSpec spec) 
+{
     stopThread(10);
 
-    sofaReader.prepare(spec.sampleRate, hrirChoice);
+    sofaReader.prepare(spec.sampleRate);
     currentSpec = spec;
 
     startThread(juce::Thread::Priority::high);
@@ -25,8 +26,8 @@ void HRIRLoader::run() {
             //previousHrirBuffer.makeCopyOf(tempHrirBuffer);
             
             // get current hrir
-            currentHrirBuffer.setSize(currentSpec.numChannels, sofaReader.get_ir_length());
-            sofaReader.get_hrirs(currentHrirBuffer, requestedHRIR.azm, requestedHRIR.elev, 1, currentLeftDelay, currentRightDelay);
+            currentHrirBuffer.setSize(currentSpec.numChannels, sofaReader.get_ir_length( hrirChoice ));
+            sofaReader.get_hrirs( currentHrirBuffer, requestedHRIR.azm, requestedHRIR.elev, 1, currentLeftDelay, currentRightDelay, hrirChoice );
             
             // copy current hrir to temp hrir
             //tempHrirBuffer.makeCopyOf(currentHrirBuffer);

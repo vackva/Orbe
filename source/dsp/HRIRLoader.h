@@ -14,7 +14,7 @@ public:
     HRIRLoader();
     ~HRIRLoader();
 
-    void prepare(const juce::dsp::ProcessSpec spec, hrirChoices hrirChoice);
+    void prepare(const juce::dsp::ProcessSpec spec);
     bool submitJob(float azm, float elev);
 
     void hrirAccessed ();
@@ -25,6 +25,8 @@ public:
 
     // TODO replace with Listener
     std::function<void()> newHRIRAvailable;
+    
+    hrirChoices hrirChoice;
 
 private:
     void run() override;
