@@ -17,7 +17,7 @@ public:
     void removeListener(Listener* listenerToRemove);
 
     void paint (juce::Graphics& g) override;
-    void setVisualPosition(float x, float y, float z);
+    void setVisualPosition(float x, float y, float z, int view);
 
 private:
     void drawCircles(juce::Graphics& g, juce::Rectangle<int> circleBounds);
@@ -33,7 +33,7 @@ private:
     float smallCircleRadius;
 
 private:
-    const int numberOfCircles = 4;
+    const int numberOfCircles = 10;
     const int reductionDivide = 10;
     const float initLineThickness = 1.5f;
 

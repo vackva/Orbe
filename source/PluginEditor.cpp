@@ -67,8 +67,9 @@ void AudioPluginAudioProcessorEditor::timerCallback() {
     float x = PluginParameters::xRange.convertFrom0to1(normalizedX);
     float y = PluginParameters::yRange.convertFrom0to1(normalizedY);
     float z = PluginParameters::zRange.convertFrom0to1(normalizedZ);
-
-    pannerVisualisation.setVisualPosition(x, y, z);
+    
+    int view = processorRef.getValueTreeState().getParameter("param_view")->getValue();
+    pannerVisualisation.setVisualPosition(x, y, z, view);
 }
 
 void AudioPluginAudioProcessorEditor::pannerChanged(float x, float y) {
