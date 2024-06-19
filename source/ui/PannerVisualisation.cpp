@@ -75,9 +75,11 @@ void PannerVisualisation::mouseDown(const juce::MouseEvent &event) {
 }
 
 void PannerVisualisation::mouseDrag(const juce::MouseEvent &event) {
+
     auto bounds = getLocalBounds().reduced(getWidth() / reductionDivide).toFloat();
     auto center = bounds.getCentre();
     auto radius = static_cast<float>(bounds.getWidth() / 2.0);
+
     juce::Point<float> newPos = event.position.toFloat();
     float distanceX = std::abs(newPos.x - center.x);
     float distanceY = std::abs(newPos.y - center.y);
@@ -123,11 +125,11 @@ void PannerVisualisation::setVisualPosition(float x, float y, float z, int view)
             auto center = bounds.getCentre().toFloat();
             float outerRadius = static_cast<float>(bounds.getWidth() / 2.0);
 
-            float zScale = ((z + 10) / 20.0f) * 1.5f + 0.5f;
-            smallCircleRadius = 10.0f * zScale;
+            float zScale = ((z + HALF_CUBE_EDGE_LENGTH) / CUBE_EDGE_LENGTH) * 1.5f + 0.5f;
+            smallCircleRadius = HALF_CUBE_EDGE_LENGTH * zScale;
 
-            float newX = center.x - (y / 10.0f) * outerRadius;
-            float newY = center.y - (x / 10.0f) * outerRadius;
+            float newX = center.x - (y / HALF_CUBE_EDGE_LENGTH) * outerRadius;
+            float newY = center.y - (x / HALF_CUBE_EDGE_LENGTH) * outerRadius;
 
             smallCirclePosition.setXY(newX, newY);
 
@@ -147,11 +149,11 @@ void PannerVisualisation::setVisualPosition(float x, float y, float z, int view)
         auto center = bounds.getCentre().toFloat();
         float outerRadius = static_cast<float>(bounds.getWidth() / 2.0);
 
-        float zScale = ((x + 10) / 20.0f) * 1.5f + 0.5f;
-        smallCircleRadius = 10.0f * zScale;
+        float zScale = ((x + HALF_CUBE_EDGE_LENGTH) / CUBE_EDGE_LENGTH) * 1.5f + 0.5f;
+        smallCircleRadius = HALF_CUBE_EDGE_LENGTH * zScale;
 
-        float newX = center.x - (y / 10.0f) * outerRadius;
-        float newY = center.y - (z / 10.0f) * outerRadius;
+        float newX = center.x - (y / HALF_CUBE_EDGE_LENGTH) * outerRadius;
+        float newY = center.y - (z / HALF_CUBE_EDGE_LENGTH) * outerRadius;
 
         smallCirclePosition.setXY(newX, newY);
 

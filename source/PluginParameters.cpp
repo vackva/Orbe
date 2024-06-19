@@ -104,7 +104,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(PRESETS_ID,
                                                                   PRESETS_NAME,
-                                                                  juce::StringArray("Custom", "Great Circle", "Eight Figure", "3D Infinity", "Diagonal Circle", "Diagonal Eight", "Sparse Spiral", "Dense Spiral", "3D Horsehoe", "Ping Pong", "Small Circle Front Left", "Small Circle Front Right", "Small Circle Back Left", "Small Circle Back Right"),
+                                                                  juce::StringArray("Custom", "Great Circle", "Eight Figure", "3D Infinity", "Diagonal Circle", "Diagonal Eight", "Sparse Spiral", "Dense Spiral", "3D Horseshoe", "Ping Pong", "Small Circle Front Left", "Small Circle Front Right", "Small Circle Back Left", "Small Circle Back Right"),
                                                                   0));
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(VIEW_ID,
