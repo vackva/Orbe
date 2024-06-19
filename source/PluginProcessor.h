@@ -79,6 +79,7 @@ private:
     std::atomic<float> paramElevation { 0.0f };
     std::atomic<float> paramDistance { 0.0f };
 
+    std::atomic<bool> paramDoppler {false};
 
     custom_juce::Convolution convolution;
     

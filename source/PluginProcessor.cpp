@@ -238,7 +238,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     lastDistanceGain = distanceGain;
 
     // APPLY DELAY   
-    if (true) { // dopplereffect enabled
+    if (paramDoppler.load()) { // dopplereffect enabled
         float doppler_delay = distance / 343 * getSampleRate(); 
         smoothDelayLeft.setTargetValue( delayTimeLeft + doppler_delay);
         smoothDelayRight.setTargetValue( delayTimeRight + doppler_delay );
@@ -303,6 +303,8 @@ void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, floa
         requestNewHRIR();
     } else if (parameterID == PluginParameters::DIST_ID.getParamID()) {
         paramDistance.store(newValue);
+    } else if (parameterID == PluginParameters::DOPPLER_ID.getParamID()) {
+        paramDoppler.store(static_cast<bool>(newValue));
     }
     if (parameterID == PluginParameters::PRESETS_ID.getParamID()) {
         int selectedOption = static_cast<int>(newValue);

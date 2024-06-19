@@ -34,6 +34,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
                                                                  zRange,
                                                                  defaultZParam));
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>(DOPPLER_ID,
+                                                                DOPPLER_NAME,
+                                                                defaultDopplerParam));
+
     params.push_back(std::make_unique<juce::AudioParameterBool>(LFO_START_ID,
                                                                 LFO_START_NAME,
                                                                 defaultLFOStartParam));
