@@ -1,6 +1,7 @@
 % Get new sampling grid
 N = 44;
 denseSamplingGrid = supdeq_lebedev([], N);
+denseSamplingGrid(:,3) = [];
 
 % 1. import hrirs
 sparseHRIRdataset_SOFA = SOFAload('pp2_HRIRs_measured.sofa');
@@ -11,7 +12,7 @@ headRadius = 0.0875;
 
 interpHRTF_sh = supdeq_interpHRTF(hrtfDataset, denseSamplingGrid,'None','SH', nan, headRadius);
 interpHRTF_sh_timealign = supdeq_interpHRTF(hrtfDataset, denseSamplingGrid,'None','SH', nan, headRadius);
-interpHRTF_mca_limited = supdeq_interpHRTF(hrtfDataset, denseSamplingGrid,'SUpDEq','SH', inf, headRadius);
+%interpHRTF_mca_limited = supdeq_interpHRTF(hrtfDataset, denseSamplingGrid,'SUpDEq','SH', inf, headRadius);
 interpHRTF_mca = supdeq_interpHRTF(hrtfDataset, denseSamplingGrid,'SUpDEq','SH', inf, headRadius);
 
 % Write SOFA file
