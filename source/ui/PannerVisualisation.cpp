@@ -1,4 +1,5 @@
 #include "PannerVisualisation.h"
+#include "../Constants.h"
 
 PannerVisualisation::PannerVisualisation() : isInitialized(false) {
     smallCircleRadius = 10.0f;
@@ -89,8 +90,8 @@ void PannerVisualisation::mouseDrag(const juce::MouseEvent &event) {
     }
 
     smallCirclePosition = newPos;
-    float newX = - (newPos.y - center.y) / radius * 10.0f;
-    float newY = - (newPos.x - center.x) / radius * 10.0f;
+    float newX = - (newPos.y - center.y) / radius * HALF_CUBE_EDGE_LENGTH;
+    float newY = - (newPos.x - center.x) / radius * HALF_CUBE_EDGE_LENGTH;
 
     listeners.call([newX, newY](Listener& l) { l.pannerChanged(newX, newY); });
 

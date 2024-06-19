@@ -1,7 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include <juce_dsp/juce_dsp.h>
+#include "dsp/convolution/custom_juce_Convolution.h"
 
 #include "PluginParameters.h"
 #include "dsp/HRIRLoader.h"
@@ -54,10 +54,11 @@ public:
 private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
     void updateHRIR();
-    void requestNewHRIR() {
+    void requestNewHRIR()
+    {
         bool success = hrirLoader.submitJob(paramAzimuth.load(), paramElevation.load());
         hrirRequestDenied = !success;
-        }
+    }
     void applyPreset(int presetOption);
     void processLFOs();
     void refreshLFOs();
@@ -65,12 +66,10 @@ private:
 private:
     juce::AudioProcessorValueTreeState parameters;
 
-    // Malte TODOgit 
-
-    dsp::Convolution convolution;
-    //dsp::Convolution convolution2;
-
     HRIRLoader hrirLoader;
+    
+    juce::AudioParameterChoice* sofaChoiceParam;
+    juce::AudioParameterBool* interpParam;
 
     bool hrirRequestDenied = false;
     std::atomic<bool> hrirAvailable { false };
@@ -83,6 +82,21 @@ private:
     std::atomic<float> paramAzimuth { 0.0f };
     std::atomic<float> paramElevation { 0.0f };
     std::atomic<float> paramDistance { 0.0f };
+
+    std::atomic<bool> paramDoppler {false};
+
+    custom_juce::Convolution convolution;
+    
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineLeft;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineRight;
+
+    float delayTimeLeft = 0;
+    float delayTimeRight = 0;
+    
+    juce::SmoothedValue<float> smoothDelayLeft { 0.0f };
+    juce::SmoothedValue<float> smoothDelayRight { 0.0f };
+    
+    
     std::atomic<float> paramX { 0.0f };
     std::atomic<float> paramY { 0.0f };
     std::atomic<float> paramZ { 0.0f };
@@ -101,7 +115,7 @@ private:
     std::atomic<float> paramZLFOOffset { 0.0f };
 
 
-    std::atomic<bool> hrirChanged { false };
+    float lastDistanceGain = 0.0f;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

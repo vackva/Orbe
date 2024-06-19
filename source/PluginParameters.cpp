@@ -1,4 +1,5 @@
 #include "PluginParameters.h"
+#include "Constants.h"
 
 juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createParameterLayout() {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
@@ -32,6 +33,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
                                                                  Z_NAME,
                                                                  zRange,
                                                                  defaultZParam));
+
+    params.push_back(std::make_unique<juce::AudioParameterBool>(DOPPLER_ID,
+                                                                DOPPLER_NAME,
+                                                                defaultDopplerParam));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(LFO_START_ID,
                                                                 LFO_START_NAME,
@@ -106,6 +111,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
                                                                   VIEW_NAME,
                                                                   juce::StringArray("Top View", "Front View"),
                                                                   0));                                                               
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(SOFA_CHOICE_ID,
+                                                                  SOFA_CHOICE_NAME,
+                                                                  juce::StringArray("measured", "interpolated_sh", "interpolated_sh_timealign", "interpolated_mca"),
+                                                                  0));
+    params.push_back(std::make_unique<juce::AudioParameterBool> (INTERP_ID,
+                                                                INTERP_NAME,
+                                                                defaultInterpParam));
+                                                               
 
     
 
@@ -192,9 +205,9 @@ void ParameterListener::boundRadius(float radius) {
     float dz = cos(colatitudeRad);
 
     // intersection of the line with the cube boundaries
-    float tX = (!juce::approximatelyEqual(dx,0.0f)) ? (10.0f / dx) : std::numeric_limits<float>::infinity();
-    float tY = (!juce::approximatelyEqual(dy,0.0f)) ? (10.0f / dy) : std::numeric_limits<float>::infinity();
-    float tZ = (!juce::approximatelyEqual(dz,0.0f)) ? (10.0f / dz) : std::numeric_limits<float>::infinity();
+    float tX = (!juce::approximatelyEqual(dx,0.0f)) ? (HALF_CUBE_EDGE_LENGTH / dx) : std::numeric_limits<float>::infinity();
+    float tY = (!juce::approximatelyEqual(dy,0.0f)) ? (HALF_CUBE_EDGE_LENGTH / dy) : std::numeric_limits<float>::infinity();
+    float tZ = (!juce::approximatelyEqual(dz,0.0f)) ? (HALF_CUBE_EDGE_LENGTH / dz) : std::numeric_limits<float>::infinity();
 
     // the intersection point is the closest one to the origin
     float tMin = std::min({std::abs(tX), std::abs(tY), std::abs(tZ)});
@@ -276,9 +289,9 @@ void ParameterListener::updateCartesianCoordinates()
     float z = radius * cos(colatitudeRad);
 
     // always limit the values to the room boundaries
-    x = jlimit(-10.0f, 10.0f, x);
-    y = jlimit(-10.0f, 10.0f, y);
-    z = jlimit(-10.0f, 10.0f, z);
+    x = jlimit(-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, x);
+    y = jlimit(-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, y);
+    z = jlimit(-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, z);
 
     float normalizedX = PluginParameters::xRange.convertTo0to1(x);
     float normalizedY = PluginParameters::yRange.convertTo0to1(y);

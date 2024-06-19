@@ -68,7 +68,7 @@ jobs:
                 choco install ninja
             elif [ "${{ matrix.name }}" == "Linux-x86_64" ]; then
                 sudo apt-get update && sudo apt install libasound2-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev ninja-build
-                sudo apt-get update && sudo apt-get install libhdf5-dev libnetcdf-dev libnetcdff-dev liblapack3 liblapack-dev libopenblas-base libopenblas-dev liblapacke-dev 
+                sudo apt-get update && sudo apt-get install libhdf5-dev libnetcdf-dev libnetcdff-dev liblapack3 liblapack-dev libopenblas-base libopenblas-dev liblapacke-dev libgl-dev libglx-dev
             else
                 echo "Unknown OS";
             fi;

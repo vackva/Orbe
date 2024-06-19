@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Constants.h"
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
@@ -15,11 +16,14 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
        parameterListener(parameters)
 
 {
+    
     for (auto & parameterID : PluginParameters::getPluginParameterList()) {
         parameters.addParameterListener(parameterID, this);
     }
 
-
+    sofaChoiceParam = dynamic_cast<juce::AudioParameterChoice*> ( parameters.getParameter( PluginParameters::SOFA_CHOICE_ID.getParamID() ) );
+    sofaChoices hrirChoice = static_cast<sofaChoices> ( sofaChoiceParam->getIndex() );
+    
     paramAzimuth.store(PluginParameters::defaultAzimParam);
     paramElevation.store(PluginParameters::defaultElevParam);
     paramDistance.store(PluginParameters::defaultDistParam);
@@ -126,16 +130,37 @@ void AudioPluginAudioProcessor::changeProgramName (int index, const juce::String
 //==============================================================================
 void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+
     dsp::ProcessSpec processSpec {sampleRate,
                                   (juce::uint32) samplesPerBlock,
                                   (juce::uint32) getTotalNumInputChannels() };
-
+    
     hrirLoader.prepare(processSpec);
-    convolution.prepare(processSpec);
+    
+    //currentConvolution.prepare(processSpec);
+    //previousConvolution.prepare(processSpec);
+    
+    convolution.prepare(processSpec);    
+    
+    int numDelayChannels = 1;
+    dsp::ProcessSpec delaySpec{sampleRate,
+                            (juce::uint32) samplesPerBlock,
+                            (juce::uint32) numDelayChannels };
+    
+    delayLineLeft.prepare(delaySpec);
+    delayLineRight.prepare(delaySpec);
+    
+    smoothDelayLeft.reset( sampleRate, 0.1 );
+    smoothDelayRight.reset( sampleRate, 0.1 );
+    
+    float maxDelayInSamples = sampleRate * 2;
+    delayLineLeft.setMaximumDelayInSamples( maxDelayInSamples );
+    delayLineRight.setMaximumDelayInSamples( maxDelayInSamples );
+    
 
     convolutionReady = false;
-
-    requestNewHRIR();
+    
+    requestNewHRIR( );
 
     xLFO->prepare(juce::dsp::ProcessSpec({ getSampleRate() / getBlockSize(), (juce::uint32)getBlockSize(), 1 }));
     xLFO->setFrequency(0.f);
@@ -174,6 +199,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 {
     juce::ignoreUnused (midiMessages);
     juce::ScopedNoDenormals noDenormals;
+    
 
     if (*parameters.getRawParameterValue("param_lfo_start") > 0.5f)
     {
@@ -181,16 +207,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     }
 
 
-    // Malte TODO
-    // 2 AudioBuffer Stereo (berets in header definiert und speicher allociert)
-
-    //stereoAudioBuffer1.copyBuffer(buffer)
-    //stereoAudioBuffer2.copyBuffer(buffer)
-
-    // convolution1.process(stereoAudioBuffer1);
-    // convolution2.process(stereoAudioBuffer2);
-
-    // mix stereoAudioBuffer1 und stereoAudioBuffer2 and write into buffer
+    // UPDATE HRIR
 
     if (hrirAvailable.load()) {
         updateHRIR();
@@ -200,14 +217,55 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         hrirRequestDenied = false;
         requestNewHRIR();
     }
+    // MAKE SIGNAL MONO
 
+    buffer.addFrom(0, 0, buffer.getReadPointer(1), buffer.getNumSamples());
+    buffer.applyGain(0.5);
+    buffer.copyFrom(1, 0, buffer.getReadPointer(0), buffer.getNumSamples());
+
+    // APPLY CONVOLUTION
+    
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
-    if (convolutionReady) {
-        convolution.process(context);
+    
+
+    if ( convolutionReady) 
+    {
+        convolution.process( context );
+    }
+    
+    // Apply Distance Compensation
+    float distance = paramDistance.load();
+    float distanceGain =  0.2 / (jmax(0.0f, distance) + 1);
+    buffer.applyGainRamp(0, buffer.getNumSamples(), lastDistanceGain, distanceGain);
+    lastDistanceGain = distanceGain;
+
+    // APPLY DELAY   
+    if (paramDoppler.load()) { // dopplereffect enabled
+        float doppler_delay = distance / 343 * getSampleRate(); 
+        smoothDelayLeft.setTargetValue( delayTimeLeft + doppler_delay);
+        smoothDelayRight.setTargetValue( delayTimeRight + doppler_delay );
+    } else {
+        smoothDelayLeft.setTargetValue( delayTimeLeft );
+        smoothDelayRight.setTargetValue( delayTimeRight );
     }
 
+
+    for (int sample = 0; sample < buffer.getNumSamples(); sample++)
+        {
+            delayLineLeft.setDelay( smoothDelayLeft.getNextValue() );
+            delayLineRight.setDelay( smoothDelayRight.getNextValue() );
+
+            delayLineLeft.pushSample(0, buffer.getSample(0, sample));
+            delayLineRight.pushSample(0, buffer.getSample(1, sample));
+
+            buffer.setSample(0, sample, delayLineLeft.popSample(0));
+            buffer.setSample(1, sample, delayLineRight.popSample(0));
+        }
+    
     buffer.applyGain(0.5);
+
+
 }
 
 //==============================================================================
@@ -248,6 +306,8 @@ void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, floa
         requestNewHRIR();
     } else if (parameterID == PluginParameters::DIST_ID.getParamID()) {
         paramDistance.store(newValue);
+    } else if (parameterID == PluginParameters::DOPPLER_ID.getParamID()) {
+        paramDoppler.store(static_cast<bool>(newValue));
     }
     if (parameterID == PluginParameters::PRESETS_ID.getParamID()) {
         int selectedOption = static_cast<int>(newValue);
@@ -259,6 +319,19 @@ void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, floa
         parameterID == PluginParameters::ZLFO_RATE_ID.getParamID()) {
         refreshLFOs();
     }
+    
+    // Change hrir if sofa choice parameter changed
+    if (parameterID == PluginParameters::SOFA_CHOICE_ID.getParamID() )
+    {
+        hrirLoader.sofaChoice = static_cast<sofaChoices> ( sofaChoiceParam->getIndex() );
+        requestNewHRIR();
+    }
+    
+    if ( parameterID == PluginParameters::INTERP_ID.getParamID() )
+    {
+        hrirLoader.doNearestNeighbourInterpolation = newValue;
+    }
+    
     parameterListener.parameterChanged(parameterID, newValue);
 }
 
@@ -273,10 +346,12 @@ float AudioPluginAudioProcessor::getAtomicParameterValue(const String &parameter
     else if (parameterID == PluginParameters::ELEV_ID.getParamID()) {
         return paramElevation.load();
     }
+    else if (parameterID == PluginParameters::DIST_ID.getParamID()) {
+        return paramDistance.load();
+    }
     else {
         return 0.0f;
     }
-
 
 }
 
@@ -288,13 +363,10 @@ void AudioPluginAudioProcessor::updateHRIR() {
     // DBG("updateHRIR() wurde aufgerufen.");
 
     hrirAvailable.store(false);
-    convolution.loadImpulseResponse(std::move(hrirLoader.getHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-
-    // Malte TODO
-
-    // convolution1.loadImpulseResponse(std::move(hrirLoader.getPrevious()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-    // convolution2.loadImpulseResponse(std::move(hrirLoader.getNewHRIR()), getSampleRate(), dsp::Convolution::Stereo::yes, dsp::Convolution::Trim::no, dsp::Convolution::Normalise::no);
-
+    
+    convolution.loadImpulseResponse(std::move(hrirLoader.getCurrentHRIR()), getSampleRate(), custom_juce::Convolution::Stereo::yes, custom_juce::Convolution::Trim::no, custom_juce::Convolution::Normalise::no);
+    hrirLoader.getCurrentDelays(delayTimeLeft, delayTimeRight);
+    
     hrirLoader.hrirAccessed();
     convolutionReady = true;
 }
@@ -320,13 +392,13 @@ void AudioPluginAudioProcessor::processLFOs()
         {
             float frequency = *parameters.getRawParameterValue("param_xlfo_rate");
             float phase = *parameters.getRawParameterValue("param_xlfo_phase");
-            float amplitude = *parameters.getRawParameterValue("param_xlfo_depth") / 10.0f;
+            float amplitude = (*parameters.getRawParameterValue("param_xlfo_depth") / 100) * HALF_CUBE_EDGE_LENGTH;
             float offset = *parameters.getRawParameterValue("param_xlfo_offset");
 
             xLFO->setFrequency(frequency);
             float xlfoSample = amplitude * std::sin(xLFO->processSample(degreesToRadians(phase))) + offset;
 
-            xlfoSample = juce::jlimit(-10.0f, 10.0f, xlfoSample);
+            xlfoSample = juce::jlimit(PluginParameters::xRange.start, PluginParameters::xRange.end, xlfoSample);
             float normalizedX = PluginParameters::xRange.convertTo0to1(xlfoSample);
             parameters.getParameter("param_x")->setValueNotifyingHost(normalizedX);
         }
@@ -335,13 +407,13 @@ void AudioPluginAudioProcessor::processLFOs()
         {
             float frequency = *parameters.getRawParameterValue("param_ylfo_rate");
             float phase = *parameters.getRawParameterValue("param_ylfo_phase");
-            float amplitude = *parameters.getRawParameterValue("param_ylfo_depth") / 10.0f;
+            float amplitude = (*parameters.getRawParameterValue("param_ylfo_depth") / 100) * HALF_CUBE_EDGE_LENGTH;
             float offset = *parameters.getRawParameterValue("param_ylfo_offset");
 
             yLFO->setFrequency(frequency);
             float ylfoSample = amplitude * std::sin(yLFO->processSample(degreesToRadians(phase))) + offset;
 
-            ylfoSample = juce::jlimit(-10.0f, 10.0f, ylfoSample);
+            ylfoSample = juce::jlimit(PluginParameters::yRange.start, PluginParameters::yRange.end, ylfoSample);
             float normalizedY = PluginParameters::yRange.convertTo0to1(ylfoSample);
             parameters.getParameter("param_y")->setValueNotifyingHost(normalizedY);
         }
@@ -350,13 +422,13 @@ void AudioPluginAudioProcessor::processLFOs()
         {
             float frequency = *parameters.getRawParameterValue("param_zlfo_rate");
             float phase = *parameters.getRawParameterValue("param_zlfo_phase");
-            float amplitude = *parameters.getRawParameterValue("param_zlfo_depth") / 10.0f;
+            float amplitude = (*parameters.getRawParameterValue("param_zlfo_depth") / 100) * HALF_CUBE_EDGE_LENGTH;
             float offset = *parameters.getRawParameterValue("param_zlfo_offset");
 
             zLFO->setFrequency(frequency);
             float zlfoSample = amplitude * std::sin(zLFO->processSample(degreesToRadians(phase))) + offset;
 
-            zlfoSample = juce::jlimit(-10.0f, 10.0f, zlfoSample);
+            zlfoSample = juce::jlimit(PluginParameters::zRange.start, PluginParameters::zRange.end, zlfoSample);
             float normalizedZ = PluginParameters::zRange.convertTo0to1(zlfoSample);
             parameters.getParameter("param_z")->setValueNotifyingHost(normalizedZ);
         }
@@ -505,7 +577,7 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.1f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 27.3f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 6.5f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 6.5f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.9f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 44.2f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 0.0f;
@@ -520,11 +592,11 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
-                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
@@ -535,11 +607,11 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = 5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
-                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
@@ -550,11 +622,11 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
-                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = 5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;
@@ -565,11 +637,11 @@ void AudioPluginAudioProcessor::applyPreset(int presetOption)
                 parameters.getParameterAsValue(PluginParameters::XLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::XLFO_PHASE_ID.getParamID()) = 0.0f;
-                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::XLFO_OFFSET_ID.getParamID()) = -5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::YLFO_RATE_ID.getParamID()) = 0.5f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_DEPTH_ID.getParamID()) = 35.0f;
                 parameters.getParameterAsValue(PluginParameters::YLFO_PHASE_ID.getParamID()) = 90.0f;
-                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f;
+                parameters.getParameterAsValue(PluginParameters::YLFO_OFFSET_ID.getParamID()) = -5.0f * (HALF_CUBE_EDGE_LENGTH / 10.0f);
                 parameters.getParameterAsValue(PluginParameters::ZLFO_RATE_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_DEPTH_ID.getParamID()) = 0.0f;
                 parameters.getParameterAsValue(PluginParameters::ZLFO_PHASE_ID.getParamID()) = 0.0f;

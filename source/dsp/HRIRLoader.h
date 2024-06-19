@@ -19,10 +19,15 @@ public:
 
     void hrirAccessed ();
 
-    juce::AudioBuffer<float>& getHRIR();
+    juce::AudioBuffer<float>& getCurrentHRIR();
+    void getCurrentDelays(float &left, float &right);
+    //juce::AudioBuffer<float>& getPreviousHRIR();
 
     // TODO replace with Listener
     std::function<void()> newHRIRAvailable;
+    
+    sofaChoices sofaChoice;
+    bool doNearestNeighbourInterpolation = true;
 
 private:
     void run() override;
@@ -34,10 +39,13 @@ private:
     SofaReader sofaReader;
     juce::dsp::ProcessSpec currentSpec;
     HRIRJob requestedHRIR;
-    juce::AudioBuffer<float> hrirBuffer;
+    
+    juce::AudioBuffer<float> currentHrirBuffer;
+    float currentLeftDelay;
+    float currentRightDelay;
+    //juce::AudioBuffer<float> previousHrirBuffer;
+    //juce::AudioBuffer<float> tempHrirBuffer;
 
-    // Malte TODO
-    //juce::AudioBuffer<float> prevHrirBuffer;
 };
 
 

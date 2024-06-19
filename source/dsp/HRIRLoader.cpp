@@ -7,7 +7,8 @@ HRIRLoader::~HRIRLoader() {
     stopThread(10);
 }
 
-void HRIRLoader::prepare(const juce::dsp::ProcessSpec spec) {
+void HRIRLoader::prepare(const juce::dsp::ProcessSpec spec) 
+{
     stopThread(10);
 
     sofaReader.prepare(spec.sampleRate);
@@ -20,15 +21,27 @@ void HRIRLoader::run() {
     while (!threadShouldExit()) {
         if (jobSubmitted.load()) {
             jobSubmitted.store(false);
-
-            hrirBuffer.setSize(currentSpec.numChannels, sofaReader.get_ir_length());
-            sofaReader.get_hrirs(hrirBuffer, requestedHRIR.azm, requestedHRIR.elev, 1);
+            
+            // set previous hrir to last temp hrir
+            //previousHrirBuffer.makeCopyOf(tempHrirBuffer);
+            
+            // get current hrir
+            currentHrirBuffer.setSize(currentSpec.numChannels, sofaReader.get_ir_length( sofaChoice ));
+            sofaReader.get_hrirs( currentHrirBuffer, requestedHRIR.azm, requestedHRIR.elev, 1, currentLeftDelay, currentRightDelay, sofaChoice, doNearestNeighbourInterpolation );
+            
+            // copy current hrir to temp hrir
+            //tempHrirBuffer.makeCopyOf(currentHrirBuffer);
 
             newHRIRAvailable();
         } else {
             sleep(10);
         }
     }
+}
+
+void HRIRLoader::getCurrentDelays(float &left, float &right){
+    left = currentLeftDelay;
+    right = currentRightDelay;
 }
 
 bool HRIRLoader::submitJob(float azm, float elev) {
@@ -46,9 +59,13 @@ bool HRIRLoader::submitJob(float azm, float elev) {
     }
 }
 
-juce::AudioBuffer<float> &HRIRLoader::getHRIR() {
-    return hrirBuffer;
+juce::AudioBuffer<float> &HRIRLoader::getCurrentHRIR() {
+    return currentHrirBuffer;
 }
+
+/*juce::AudioBuffer<float> &HRIRLoader::getPreviousHRIR() {
+    return previousHrirBuffer;
+}*/
 
 void HRIRLoader::hrirAccessed() {
     hrirFinished.store(true);

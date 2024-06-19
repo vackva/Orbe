@@ -2,6 +2,7 @@
 #define BINAURALPANNER_PLUGINPARAMETERS_H
 
 #include <JuceHeader.h>
+#include "Constants.h"
 
 class PluginParameters {
 public:
@@ -26,7 +27,10 @@ public:
             ZLFO_PHASE_ID = {"param_zlfo_phase", 1},
             ZLFO_OFFSET_ID = {"param_zlfo_offset", 1},
             PRESETS_ID = {"param_presets", 1},
-            VIEW_ID = {"param_view", 1};
+            VIEW_ID = {"param_view", 1},
+            DOPPLER_ID = {"param_doppler", 1},
+            SOFA_CHOICE_ID = {"param_sofa_choices", 1},
+            INTERP_ID = {"param_nearest_neighbour_interp", 1};
  
 
             
@@ -52,7 +56,10 @@ public:
             ZLFO_PHASE_NAME = "Z LFO Phase",
             ZLFO_OFFSET_NAME = "Z LFO Offset",
             PRESETS_NAME = "Presets",
-            VIEW_NAME = "View"; 
+            VIEW_NAME = "View", 
+            DOPPLER_NAME = "Doppler Effect Enabled",
+            SOFA_CHOICE_NAME = "Sofa Choices",
+            INTERP_NAME = "Nearest Neighbour Interpolation";
 
             
     
@@ -67,6 +74,7 @@ public:
     const inline static float defaultYParam { 0.f };
     const inline static float defaultZParam { 0.f };
     const inline static bool defaultLFOStartParam { false };
+    const inline static bool defaultDopplerParam { false };
     const inline static float defaultXLFORateParam { 0.f };
     const inline static float defaultXLFODepthParam { 0.f };
     const inline static float defaultXLFOPhaseParam { 0.f };
@@ -79,27 +87,28 @@ public:
     const inline static float defaultZLFODepthParam { 0.f };
     const inline static float defaultZLFOPhaseParam { 0.f };
     const inline static float defaultZLFOOffsetParam { 0.f };
+    const inline static bool defaultInterpParam { true };
 
     
 
     inline static juce::NormalisableRange<float> azimRange {-180.0f, 180.0f, 0.01f},
                                                 elevRange {-90.0f, 90.0f, 0.01f},
-                                                distRange {0.0f, 17.4f, 0.1f},
-                                                xRange {-10.f, 10.f, 0.1f},
-                                                yRange {-10.f, 10.f, 0.1f},
-                                                zRange {-10.f, 10.f, 0.1f},
+                                                distRange {0.0f, static_cast<float>(sqrt(pow(HALF_CUBE_EDGE_LENGTH, 2) * 3)), 0.01f},
+                                                xRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
+                                                yRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
+                                                zRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
                                                 xLFORateRange {0.0f, 1.5f, 0.1f},
                                                 xLFODepthRange {0.0f, 100.f, 0.1f},
                                                 xLFOPhaseRange {-180.f, 180.f, 1.f},
-                                                xLFOOffsetRange {-10.f, 10.f, 0.1f},
+                                                xLFOOffsetRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
                                                 yLFORateRange {0.0f, 1.5f, 0.1f},
                                                 yLFODepthRange {0.0f, 100.f, 0.1f},
                                                 yLFOPhaseRange {-180.f, 180.f, 1.f},
-                                                yLFOOffsetRange {-10.f, 10.f, 0.1f},
+                                                yLFOOffsetRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
                                                 zLFORateRange {0.0f, 1.5f, 0.1f},
                                                 zLFODepthRange {0.0f, 100.f, 0.1f},
                                                 zLFOPhaseRange {-180.f, 180.f, 1.f},
-                                                zLFOOffsetRange {-10.f, 10.f, 0.1f};
+                                                zLFOOffsetRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f};
 
 
 private:
