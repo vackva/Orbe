@@ -20,6 +20,9 @@ fs = 44100;
 earDistance = 0.165;
 sourceDistance = 1.47;
 
+% adjust sampling grid to SOFA azimuth (-90,90)
+denseSamplingGrid(:,2) = denseSamplingGrid(:,2)-90;
+
 HRIR_L = permute(interpHRTF_sh.HRIR_L,[2 1]);
 HRIR_R = permute(interpHRTF_sh.HRIR_R,[2 1]);
 SOFAobj = supdeq_writeSOFAobj(HRIR_L, HRIR_R, denseSamplingGrid, fs, earDistance, sourceDistance); 
