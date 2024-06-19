@@ -105,6 +105,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
                                                                   SOFA_CHOICE_NAME,
                                                                   juce::StringArray("measured", "interpolated_sh", "interpolated_sh_timealign", "interpolated_mca"),
                                                                   0));
+    params.push_back(std::make_unique<juce::AudioParameterBool> (INTERP_ID,
+                                                                INTERP_NAME,
+                                                                defaultInterpParam));
                                                                
 
     

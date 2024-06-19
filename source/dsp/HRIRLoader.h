@@ -27,6 +27,7 @@ public:
     std::function<void()> newHRIRAvailable;
     
     sofaChoices sofaChoice;
+    bool doNearestNeighbourInterpolation = true;
 
 private:
     void run() override;

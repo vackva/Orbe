@@ -24,10 +24,12 @@ public:
     void prepare(double samplerate);
 
     int get_ir_length( sofaChoices sofaChoice) ;
-    void get_hrirs(juce::AudioBuffer<float>& buffer, float azim, float elev, float dist, float &currentLeftDelay, float &currentRightDelay, sofaChoices sofaChoice);
+    void get_hrirs(juce::AudioBuffer<float>& buffer, float azim, float elev, float dist, float &currentLeftDelay, float &currentRightDelay, sofaChoices sofaChoice, bool doNearestNeighbourInterpolation);
 
 private:
+    
     float coordinate_buffer[3];
+    
     int ir_length_measured;
     int ir_length_interpolated_sh;
     int ir_length_interpolated_sh_timealign;

@@ -21,34 +21,6 @@ SofaReader::~SofaReader() {
 
 void SofaReader::prepare(double samplerate)
 {
-    /*
-    auto sofaBinary = BinaryData::pp2_HRIRs_measured_sofa;
-    auto sofaSizeBinary = BinaryData::pp2_HRIRs_measured_sofaSize;
-    
-    switch (hrirChoice)
-    {
-        case hrirChoices::measured:
-            sofaBinary = BinaryData::pp2_HRIRs_measured_sofa;
-            sofaSizeBinary = BinaryData::pp2_HRIRs_measured_sofaSize;
-            break;
-        case hrirChoices::interpolated_sh:
-            sofaBinary = BinaryData::pp2_HRIRs_interpolated_sh_sofa;
-            sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_sh_sofaSize;
-            break;
-        case hrirChoices::interpolated_sh_timealign:
-            sofaBinary = BinaryData::pp2_HRIRs_interpolated_sh_timealign_sofa;
-            sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_sh_timealign_sofaSize;
-            break;
-        case hrirChoices::interpolated_mca:
-            sofaBinary = BinaryData::pp2_HRIRs_interpolated_mca_time_aligned_sofa;
-            sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_mca_time_aligned_sofaSize;
-            break;
-        default:
-            break;
-    }*/
-    
-
-    
     // MEASURED
     auto sofaBinary = BinaryData::pp2_HRIRs_measured_sofa;
     auto sofaSizeBinary = BinaryData::pp2_HRIRs_measured_sofaSize;
@@ -70,7 +42,6 @@ void SofaReader::prepare(double samplerate)
             std::cout << "Error while loading Sofa File" << std::endl;
             return;
     }
-        
             
     // INTERPOLATED SH
     sofaBinary = BinaryData::pp2_HRIRs_interpolated_sh_sofa;
@@ -139,8 +110,8 @@ void SofaReader::prepare(double samplerate)
     }
 }
 
-int SofaReader::get_ir_length( sofaChoices hrirChoice ) {
-    switch(hrirChoice)
+int SofaReader::get_ir_length( sofaChoices sofaChoice ) {
+    switch(sofaChoice)
     {
         case sofaChoices::measured:
             return ir_length_measured;
@@ -159,7 +130,7 @@ int SofaReader::get_ir_length( sofaChoices hrirChoice ) {
     }
 }
 
-void SofaReader::get_hrirs(AudioBuffer<float> &buffer, float azim, float elev, float dist, float &leftDelay, float &rightDelay, sofaChoices sofaChoice) {
+void SofaReader::get_hrirs(AudioBuffer<float> &buffer, float azim, float elev, float dist, float &leftDelay, float &rightDelay, sofaChoices sofaChoice, bool doNearestNeighbourInterpolation) {
     auto leftIR = buffer.getWritePointer(0);
     auto rightIR = buffer.getWritePointer(1);
     //float leftDelay;
@@ -173,23 +144,38 @@ void SofaReader::get_hrirs(AudioBuffer<float> &buffer, float azim, float elev, f
     switch(sofaChoice)
     {
         case sofaChoices::measured:
-            mysofa_getfilter_float(*sofa_measured, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            if ( doNearestNeighbourInterpolation )
+                mysofa_getfilter_float(*sofa_measured, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            else
+                mysofa_getfilter_float_nointerp(*sofa_measured, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
             break;
             
         case sofaChoices::interpolated_sh:
-            mysofa_getfilter_float(*sofa_interpolated_sh, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            if ( doNearestNeighbourInterpolation )
+                mysofa_getfilter_float(*sofa_interpolated_sh, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            else
+                mysofa_getfilter_float_nointerp(*sofa_interpolated_sh, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
             break;
             
         case sofaChoices::interpolated_sh_timealign:
-            mysofa_getfilter_float(*sofa_interpolated_sh_timealign, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            if ( doNearestNeighbourInterpolation )
+                mysofa_getfilter_float(*sofa_interpolated_sh_timealign, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            else
+                mysofa_getfilter_float_nointerp(*sofa_interpolated_sh_timealign, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
             break;
             
         case sofaChoices::interpolated_mca:
-            mysofa_getfilter_float(*sofa_interpolated_mca, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            if ( doNearestNeighbourInterpolation )
+                mysofa_getfilter_float(*sofa_interpolated_mca, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            else
+                mysofa_getfilter_float_nointerp(*sofa_interpolated_mca, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
             break;
             
         default:
-            mysofa_getfilter_float(*sofa_measured, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            if ( doNearestNeighbourInterpolation )
+                mysofa_getfilter_float(*sofa_measured, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
+            else
+                mysofa_getfilter_float_nointerp(*sofa_interpolated_mca, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
             break;
     }
 }

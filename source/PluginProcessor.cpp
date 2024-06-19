@@ -317,11 +317,16 @@ void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, floa
         refreshLFOs();
     }
     
-    // Change hrir if hrirs parameter changed
+    // Change hrir if sofa choice parameter changed
     if (parameterID == PluginParameters::SOFA_CHOICE_ID.getParamID() )
     {
         hrirLoader.sofaChoice = static_cast<sofaChoices> ( sofaChoiceParam->getIndex() );
         requestNewHRIR();
+    }
+    
+    if ( parameterID == PluginParameters::INTERP_ID.getParamID() )
+    {
+        hrirLoader.doNearestNeighbourInterpolation = newValue;
     }
     
     parameterListener.parameterChanged(parameterID, newValue);
