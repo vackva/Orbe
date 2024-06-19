@@ -2,6 +2,7 @@
 #define BINAURALPANNER_PANNER_H
 
 #include <JuceHeader.h>
+#include "../Constants.h"
 
 class PannerVisualisation : public juce::Component {
 public:
@@ -33,8 +34,8 @@ private:
     float smallCircleRadius;
 
 private:
-    const int numberOfCircles = 4;
-    const int reductionDivide = 10;
+    const int numberOfCircles = HALF_CUBE_EDGE_LENGTH;
+    const int reductionDivide = CUBE_EDGE_LENGTH + 2;
     const float initLineThickness = 1.5f;
 
     bool mouseIsActive = false;
