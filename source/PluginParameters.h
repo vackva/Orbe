@@ -27,6 +27,7 @@ public:
             ZLFO_PHASE_ID = {"param_zlfo_phase", 1},
             ZLFO_OFFSET_ID = {"param_zlfo_offset", 1},
             PRESETS_ID = {"param_presets", 1},
+            VIEW_ID = {"param_view", 1},
             DOPPLER_ID = {"param_doppler", 1},
             SOFA_CHOICE_ID = {"param_sofa_choices", 1},
             INTERP_ID = {"param_nearest_neighbour_interp", 1};
@@ -54,7 +55,8 @@ public:
             ZLFO_DEPTH_NAME = "Z LFO Depth",
             ZLFO_PHASE_NAME = "Z LFO Phase",
             ZLFO_OFFSET_NAME = "Z LFO Offset",
-            PRESETS_NAME = "Presets", 
+            PRESETS_NAME = "Presets",
+            VIEW_NAME = "View", 
             DOPPLER_NAME = "Doppler Effect Enabled",
             SOFA_CHOICE_NAME = "Sofa Choices",
             INTERP_NAME = "Nearest Neighbour Interpolation";

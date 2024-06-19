@@ -51,3 +51,4 @@ void AudioPluginAudioProcessorEditor::setEditorDimensions() {
 
     setSize(1200,static_cast<int>(1200.0 / ratio));
 }
+
