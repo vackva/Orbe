@@ -10,6 +10,9 @@ Orbe is a real-time audio plugin designed as a binaural spatializer
 - **3D Auto-Pan Functionality:** Simplify spatial manipulation with an auto-pan feature controlled by sinusoidal oscillators
 - **3D Visualization:** Orbe provides a 3d visual representation of the panning, enhancing the understanding of spatial dynamics
 
+## Signal Flow
+![interface](assets/images/orbe-github-signal-flow.png)
+
 ## Build instruction
 Build with CMake
 ```bash
