@@ -22,8 +22,8 @@ SofaReader::~SofaReader() {
 void SofaReader::prepare(double samplerate)
 {
     // MEASURED
-    auto sofaBinary = BinaryData::pp2_HRIRs_measured_sofa;
-    auto sofaSizeBinary = BinaryData::pp2_HRIRs_measured_sofaSize;
+    auto sofaBinary = BinaryData::pp2_HRIRs_measured_time_aligned_sofa;
+    auto sofaSizeBinary = BinaryData::pp2_HRIRs_measured_time_aligned_sofaSize;
     
     if (sofa_measured != nullptr)
     {
@@ -44,8 +44,8 @@ void SofaReader::prepare(double samplerate)
     }
             
     // INTERPOLATED SH
-    sofaBinary = BinaryData::pp2_HRIRs_interpolated_sh_sofa;
-    sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_sh_sofaSize;
+    sofaBinary = BinaryData::pp2_HRIRs_interpolated_sh_time_aligned_sofa;
+    sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_sh_time_aligned_sofaSize;
     
     if (sofa_interpolated_sh != nullptr)
     {
@@ -66,8 +66,8 @@ void SofaReader::prepare(double samplerate)
     }
             
     // INTERPOLATED SH TIMEALIGNED
-    sofaBinary = BinaryData::pp2_HRIRs_interpolated_sh_timealign_sofa;
-    sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_sh_timealign_sofaSize;
+    sofaBinary = BinaryData::pp2_HRIRs_interpolated_sh_timealign_time_aligned_sofa;
+    sofaSizeBinary = BinaryData::pp2_HRIRs_interpolated_sh_timealign_time_aligned_sofaSize;
     
     if (sofa_interpolated_sh_timealign != nullptr)
     {
