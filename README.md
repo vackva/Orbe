@@ -8,8 +8,8 @@
 Orbe is a real-time audio plugin designed as a binaural spatializer
 
 **Features:**
-- **Realistic Binaural Panning:** binaural sound panning in an open field using sophisticated SOFA data handling
-- **Flexible Source Positioning:** Control the audio source with precision using both cartesian and spherical coordinates
+- **Realistic Binaural Panning:** binaural sound panning in an open field using SOFA data handling
+- **Flexible Source Positioning:** Control the audio source using both cartesian and spherical coordinates
 - **3D Auto-Pan Functionality:** Simplify spatial manipulation with an auto-pan feature controlled by sinusoidal oscillators
 - **3D Visualization:** Orbe provides a 3d visual representation of the panning, enhancing the understanding of spatial dynamics
 
