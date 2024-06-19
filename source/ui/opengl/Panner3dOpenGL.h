@@ -31,12 +31,12 @@ public:
         addAndMakeVisible(cameraYSlider);
         cameraYSlider.setRange(-50.0, 50.0, 0.01);
         cameraYSlider.addListener(this);
-        cameraYSlider.setValue(3.0);
+        cameraYSlider.setValue(0.0);
 
         addAndMakeVisible(cameraZSlider);
         cameraZSlider.setRange(-50.0, 50.0, 0.01);
         cameraZSlider.addListener(this);
-        cameraZSlider.setValue(-20.0);
+        cameraZSlider.setValue(-8.0);
 
         if (true) {
             rotationXSlider.setVisible(false);
