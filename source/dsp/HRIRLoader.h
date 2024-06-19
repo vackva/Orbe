@@ -26,7 +26,7 @@ public:
     // TODO replace with Listener
     std::function<void()> newHRIRAvailable;
     
-    hrirChoices hrirChoice;
+    sofaChoices sofaChoice;
 
 private:
     void run() override;

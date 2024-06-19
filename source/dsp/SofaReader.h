@@ -8,15 +8,13 @@
 #include <JuceHeader.h>
 #include <mysofa.h>
 
-enum hrirChoices
+enum sofaChoices
 {
     measured,
     interpolated_sh,
     interpolated_sh_timealign,
     interpolated_mca
 };
-
-//static hrirChoices hrirChoice = hrirChoices::measured;
 
 class SofaReader {
 public:
@@ -25,8 +23,8 @@ public:
 
     void prepare(double samplerate);
 
-    int get_ir_length( hrirChoices hrirChoice) ;
-    void get_hrirs(juce::AudioBuffer<float>& buffer, float azim, float elev, float dist, float &currentLeftDelay, float &currentRightDelay, hrirChoices hrirChoice);
+    int get_ir_length( sofaChoices sofaChoice) ;
+    void get_hrirs(juce::AudioBuffer<float>& buffer, float azim, float elev, float dist, float &currentLeftDelay, float &currentRightDelay, sofaChoices sofaChoice);
 
 private:
     float coordinate_buffer[3];

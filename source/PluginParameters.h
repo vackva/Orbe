@@ -26,7 +26,7 @@ public:
             ZLFO_PHASE_ID = {"param_zlfo_phase", 1},
             ZLFO_OFFSET_ID = {"param_zlfo_offset", 1},
             PRESETS_ID = {"param_presets", 1},
-            HRIRS_ID = {"param_hrirs", 1};
+            SOFA_CHOICE_ID = {"param_sofa_choices", 1};
  
 
             
@@ -52,7 +52,7 @@ public:
             ZLFO_PHASE_NAME = "Z LFO Phase",
             ZLFO_OFFSET_NAME = "Z LFO Offset",
             PRESETS_NAME = "Presets",
-            HRIRS_NAME = "HRIRs";
+            SOFA_CHOICE_NAME = "Sofa Choices";
 
             
     

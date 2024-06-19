@@ -20,8 +20,8 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
         parameters.addParameterListener(parameterID, this);
     }
 
-    hrirChoiceParam = dynamic_cast<juce::AudioParameterChoice*> ( parameters.getParameter( PluginParameters::HRIRS_ID.getParamID() ) );
-    hrirChoices hrirChoice = static_cast<hrirChoices> ( hrirChoiceParam->getIndex() );
+    sofaChoiceParam = dynamic_cast<juce::AudioParameterChoice*> ( parameters.getParameter( PluginParameters::SOFA_CHOICE_ID.getParamID() ) );
+    sofaChoices hrirChoice = static_cast<sofaChoices> ( sofaChoiceParam->getIndex() );
     
     paramAzimuth.store(PluginParameters::defaultAzimParam);
     paramElevation.store(PluginParameters::defaultElevParam);
@@ -318,9 +318,9 @@ void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, floa
     }
     
     // Change hrir if hrirs parameter changed
-    if (parameterID == PluginParameters::HRIRS_ID.getParamID() )
+    if (parameterID == PluginParameters::SOFA_CHOICE_ID.getParamID() )
     {
-        hrirLoader.hrirChoice = static_cast<hrirChoices> ( hrirChoiceParam->getIndex() );
+        hrirLoader.sofaChoice = static_cast<sofaChoices> ( sofaChoiceParam->getIndex() );
         requestNewHRIR();
     }
     

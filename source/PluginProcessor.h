@@ -68,7 +68,7 @@ private:
 
     HRIRLoader hrirLoader;
     
-    juce::AudioParameterChoice* hrirChoiceParam;
+    juce::AudioParameterChoice* sofaChoiceParam;
 
     bool hrirRequestDenied = false;
     std::atomic<bool> hrirAvailable { false };

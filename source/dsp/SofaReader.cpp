@@ -139,19 +139,19 @@ void SofaReader::prepare(double samplerate)
     }
 }
 
-int SofaReader::get_ir_length( hrirChoices hrirChoice ) {
+int SofaReader::get_ir_length( sofaChoices hrirChoice ) {
     switch(hrirChoice)
     {
-        case hrirChoices::measured:
+        case sofaChoices::measured:
             return ir_length_measured;
             
-        case hrirChoices::interpolated_sh:
+        case sofaChoices::interpolated_sh:
             return ir_length_interpolated_sh;
             
-        case hrirChoices::interpolated_sh_timealign:
+        case sofaChoices::interpolated_sh_timealign:
             return ir_length_interpolated_sh_timealign;
             
-        case hrirChoices::interpolated_mca:
+        case sofaChoices::interpolated_mca:
             return ir_length_interpolated_mca;
             
         default:
@@ -159,7 +159,7 @@ int SofaReader::get_ir_length( hrirChoices hrirChoice ) {
     }
 }
 
-void SofaReader::get_hrirs(AudioBuffer<float> &buffer, float azim, float elev, float dist, float &leftDelay, float &rightDelay, hrirChoices hrirChoice) {
+void SofaReader::get_hrirs(AudioBuffer<float> &buffer, float azim, float elev, float dist, float &leftDelay, float &rightDelay, sofaChoices sofaChoice) {
     auto leftIR = buffer.getWritePointer(0);
     auto rightIR = buffer.getWritePointer(1);
     //float leftDelay;
@@ -170,21 +170,21 @@ void SofaReader::get_hrirs(AudioBuffer<float> &buffer, float azim, float elev, f
     coordinate_buffer[2] = dist;
     mysofa_s2c((float *) &coordinate_buffer);
     
-    switch(hrirChoice)
+    switch(sofaChoice)
     {
-        case hrirChoices::measured:
+        case sofaChoices::measured:
             mysofa_getfilter_float(*sofa_measured, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
             break;
             
-        case hrirChoices::interpolated_sh:
+        case sofaChoices::interpolated_sh:
             mysofa_getfilter_float(*sofa_interpolated_sh, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
             break;
             
-        case hrirChoices::interpolated_sh_timealign:
+        case sofaChoices::interpolated_sh_timealign:
             mysofa_getfilter_float(*sofa_interpolated_sh_timealign, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
             break;
             
-        case hrirChoices::interpolated_mca:
+        case sofaChoices::interpolated_mca:
             mysofa_getfilter_float(*sofa_interpolated_mca, coordinate_buffer[0], coordinate_buffer[1], coordinate_buffer[2], leftIR, rightIR, &leftDelay, &rightDelay);
             break;
             

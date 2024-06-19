@@ -101,8 +101,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
                                                                   PRESETS_NAME,
                                                                   juce::StringArray("Custom", "Great Circle", "Eight Figure", "3D Infinity", "Diagonal Circle", "Diagonal Eight", "Sparse Spiral", "Dense Spiral", "3D Horsehoe", "Ping Pong", "Small Circle Front Left", "Small Circle Front Right", "Small Circle Back Left", "Small Circle Back Right"),
                                                                   0));
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(HRIRS_ID,
-                                                                  HRIRS_NAME,
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(SOFA_CHOICE_ID,
+                                                                  SOFA_CHOICE_NAME,
                                                                   juce::StringArray("measured", "interpolated_sh", "interpolated_sh_timealign", "interpolated_mca"),
                                                                   0));
                                                                
