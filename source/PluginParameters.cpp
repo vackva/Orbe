@@ -37,6 +37,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginParameters::createPara
     params.push_back(std::make_unique<juce::AudioParameterBool>(DOPPLER_ID,
                                                                 DOPPLER_NAME,
                                                                 defaultDopplerParam));
+                                                    
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(DOPPLER_STRENGTH_ID, 
+                                                                DOPPLER_STRENGTH_NAME, 
+                                                                dopplerStrengthRange,
+                                                                defaultDopplerStrengthParam));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(LFO_START_ID,
                                                                 LFO_START_NAME,

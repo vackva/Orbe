@@ -29,6 +29,7 @@ public:
             PRESETS_ID = {"param_presets", 1},
             VIEW_ID = {"param_view", 1},
             DOPPLER_ID = {"param_doppler", 1},
+            DOPPLER_STRENGTH_ID = {"param_doppler_strength", 1},
             SOFA_CHOICE_ID = {"param_sofa_choices", 1},
             INTERP_ID = {"param_nearest_neighbour_interp", 1};
  
@@ -58,6 +59,7 @@ public:
             PRESETS_NAME = "Presets",
             VIEW_NAME = "View", 
             DOPPLER_NAME = "Doppler Effect Enabled",
+            DOPPLER_STRENGTH_NAME = "Doppler Effect Strength",
             SOFA_CHOICE_NAME = "Sofa Choices",
             INTERP_NAME = "Nearest Neighbour Interpolation";
 
@@ -75,6 +77,7 @@ public:
     const inline static float defaultZParam { 0.f };
     const inline static bool defaultLFOStartParam { false };
     const inline static bool defaultDopplerParam { false };
+    const inline static float defaultDopplerStrengthParam { 1.f };
     const inline static float defaultXLFORateParam { 0.f };
     const inline static float defaultXLFODepthParam { 0.f };
     const inline static float defaultXLFOPhaseParam { 0.f };
@@ -108,7 +111,8 @@ public:
                                                 zLFORateRange {0.0f, 1.5f, 0.1f},
                                                 zLFODepthRange {0.0f, 100.f, 0.1f},
                                                 zLFOPhaseRange {-180.f, 180.f, 1.f},
-                                                zLFOOffsetRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f};
+                                                zLFOOffsetRange {-HALF_CUBE_EDGE_LENGTH, HALF_CUBE_EDGE_LENGTH, 0.01f},
+                                                dopplerStrengthRange {0.0, 10.0, 0.01f};
 
 
 private:

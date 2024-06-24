@@ -113,6 +113,7 @@ private:
     std::atomic<float> paramZLFODepth { 0.0f };
     std::atomic<float> paramZLFOPhase { 0.0f };
     std::atomic<float> paramZLFOOffset { 0.0f };
+    std::atomic<float> paramDopplerStrength { 1.0f };
 
 
     float lastDistanceGain = 0.0f;

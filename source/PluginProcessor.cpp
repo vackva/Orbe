@@ -236,13 +236,13 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     
     // Apply Distance Compensation
     float distance = paramDistance.load();
-    float distanceGain =  0.2 / (jmax(0.0f, distance) + 1);
+    float distanceGain =  1.0 / (jmax(0.0f, distance) + 1);
     buffer.applyGainRamp(0, buffer.getNumSamples(), lastDistanceGain, distanceGain);
     lastDistanceGain = distanceGain;
 
     // APPLY DELAY   
     if (paramDoppler.load()) { // dopplereffect enabled
-        float doppler_delay = distance / 343 * getSampleRate(); 
+        float doppler_delay = paramDopplerStrength * distance / 343 * getSampleRate(); 
         smoothDelayLeft.setTargetValue( delayTimeLeft + doppler_delay);
         smoothDelayRight.setTargetValue( delayTimeRight + doppler_delay );
     } else {
@@ -263,7 +263,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             buffer.setSample(1, sample, delayLineRight.popSample(0));
         }
     
-    buffer.applyGain(0.5);
+    buffer.applyGain(0.3);
 
 
 }
@@ -308,6 +308,8 @@ void AudioPluginAudioProcessor::parameterChanged(const String &parameterID, floa
         paramDistance.store(newValue);
     } else if (parameterID == PluginParameters::DOPPLER_ID.getParamID()) {
         paramDoppler.store(static_cast<bool>(newValue));
+    } else if (parameterID == PluginParameters::DOPPLER_STRENGTH_ID.getParamID()){
+        paramDopplerStrength.store(newValue);
     }
     if (parameterID == PluginParameters::PRESETS_ID.getParamID()) {
         int selectedOption = static_cast<int>(newValue);
