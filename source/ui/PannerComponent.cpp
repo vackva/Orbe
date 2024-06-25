@@ -102,6 +102,6 @@ void PannerComponent::timerCallback() {
         pannerVisualisation.setVisualPosition(x, y, z, view);
     } else {
         // Coordinates are swapped to rotate the coordinate system by 90 degrees counter-clockwise
-        openGLVisualisation.setVisualPosition(-y, x, z);
+        openGLVisualisation.setVisualPosition(-y, x, -z);
     }
 }
